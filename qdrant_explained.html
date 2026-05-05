@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Qdrant Explained — A Visual Guide for Students</title>
+<style>
+  :root {
+    --bg: #0a1628;
+    --panel: #112236;
+    --panel-2: #1c3149;
+    --text: #e0f2fe;
+    --muted: #94a8c0;
+    --accent: #dc382d;     /* Qdrant red */
+    --accent-2: #38bdf8;   /* sky blue */
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, #0a1628 0%, #050d1a 100%);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 40px 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(220,56,45,0.20), transparent 70%);
+    border-bottom: 1px solid #1f3552;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  section {
+    background: var(--panel);
+    border: 1px solid #2a4566;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 22px 0;
+    box-shadow: 0 4px 22px rgba(0,0,0,0.35);
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 2px dashed #355681;
+    padding-bottom: 8px;
+  }
+  h3 { color: var(--accent-2); }
+  code, pre {
+    background: #050d1a;
+    border: 1px solid #1f3552;
+    border-radius: 8px;
+    padding: 2px 6px;
+    color: #bae6fd;
+    font-family: "Fira Code", Consolas, monospace;
+  }
+  pre { padding: 14px; overflow-x: auto; }
+  .analogy {
+    background: linear-gradient(135deg, rgba(220,56,45,0.12), rgba(56,189,248,0.10));
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 14px 0;
+  }
+  .tip {
+    background: rgba(74,222,128,0.10);
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #355681;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent-2); }
+  .demo {
+    background: #050d1a;
+    border: 1px solid #2a4566;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .demo input, .demo button, .demo select {
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #355681;
+    background: #112236;
+    color: var(--text);
+  }
+  .demo button {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  .demo button:hover { background: #ef4444; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border-bottom: 1px solid #2a4566; text-align: left; }
+  th { color: var(--accent-2); }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 12px 0;
+  }
+  .step .num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pill {
+    display: inline-block;
+    background: #1c3149;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .badge { font-size: 0.8rem; padding: 2px 8px; border-radius: 6px; background: #1c3149; color: var(--accent-2); }
+  .result {
+    margin-top: 12px;
+    padding: 12px;
+    background: #112236;
+    border-radius: 8px;
+    border: 1px solid #2a4566;
+  }
+  .result .item {
+    padding: 8px 10px;
+    margin: 6px 0;
+    background: #1c3149;
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+  .meta { color: var(--muted); font-size: 0.85rem; }
+  .score { float: right; color: var(--good); font-weight: 700; }
+  svg { display: block; margin: 0 auto; }
+  .layer-label { fill: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Qdrant Explained</h1>
+  <p>The blazing-fast, production-grade vector search engine — explained for students.</p>
+  <div>
+    <span class="pill">Written in Rust</span>
+    <span class="pill">HNSW</span>
+    <span class="pill">Filtering</span>
+    <span class="pill">Production-Ready</span>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. What is Qdrant -->
+<section>
+  <h2>1. What is Qdrant?</h2>
+  <p><b>Qdrant</b> (pronounced <i>"quadrant"</i>) is an open-source <b>vector search engine and database</b> written in Rust. It's designed for <b>production scale</b> — millions to billions of vectors — with strong support for <b>filtering</b> on metadata (called "payload" in Qdrant).</p>
+
+  <div class="analogy">
+    🚀 <b>Analogy — The Smart Airport Control Tower:</b><br/>
+    Picture a busy airport. Thousands of planes (vectors) are in the sky. Each plane carries cargo (payload: airline, destination, weight). When someone asks <i>"find me the 5 nearest cargo planes flying to Europe with weight &gt; 10 tons,"</i> the control tower:
+    <ol>
+      <li>Filters by destination &amp; weight first,</li>
+      <li>Then finds the geographically closest planes — instantly.</li>
+    </ol>
+    Qdrant is that tower: it combines <b>vector similarity</b> + <b>structured filtering</b> at lightning speed.
+  </div>
+</section>
+
+<!-- 2. Core ideas -->
+<section>
+  <h2>2. Qdrant's Core Concepts</h2>
+  <div class="grid">
+    <div class="card"><h4>📦 Collection</h4>A named container of vectors (like a "table"). You define its dimension &amp; distance metric.</div>
+    <div class="card"><h4>🎯 Point</h4>A single record = <code>id</code> + <code>vector</code> + <code>payload</code> (metadata JSON).</div>
+    <div class="card"><h4>🏷️ Payload</h4>Any JSON metadata: tags, prices, categories, dates — fully filterable.</div>
+    <div class="card"><h4>📐 Distance</h4>How similarity is measured: <code>Cosine</code>, <code>Dot</code>, or <code>Euclid</code>.</div>
+  </div>
+
+  <pre>POST /collections/movies
+{
+  "vectors": { "size": 384, "distance": "Cosine" }
+}
+
+POST /collections/movies/points
+{
+  "points": [
+    { "id": 1, "vector": [0.12, -0.44, ...],
+      "payload": { "title": "Inception", "year": 2010, "genre": "sci-fi" } },
+    { "id": 2, "vector": [0.21, -0.31, ...],
+      "payload": { "title": "Titanic",   "year": 1997, "genre": "romance" } }
+  ]
+}</pre>
+</section>
+
+<!-- 3. HNSW visual -->
+<section>
+  <h2>3. How Qdrant Stores Vectors — The HNSW Graph</h2>
+  <p>Qdrant's main index is <b>HNSW</b> (Hierarchical Navigable Small World). Imagine a <b>multi-level subway map</b>:</p>
+
+  <svg viewBox="0 0 600 320" width="100%">
+    <text x="20" y="40" class="layer-label">Layer 2 (express)</text>
+    <text x="20" y="160" class="layer-label">Layer 1 (regional)</text>
+    <text x="20" y="280" class="layer-label">Layer 0 (every stop)</text>
+
+    <!-- layer 2 nodes -->
+    <line x1="180" y1="50" x2="420" y2="50" stroke="#dc382d" stroke-width="2"/>
+    <circle cx="180" cy="50" r="9" fill="#dc382d"/>
+    <circle cx="300" cy="50" r="9" fill="#dc382d"/>
+    <circle cx="420" cy="50" r="9" fill="#dc382d"/>
+
+    <!-- layer 1 nodes -->
+    <line x1="120" y1="170" x2="240" y2="170" stroke="#38bdf8" stroke-width="1.5"/>
+    <line x1="240" y1="170" x2="360" y2="170" stroke="#38bdf8" stroke-width="1.5"/>
+    <line x1="360" y1="170" x2="480" y2="170" stroke="#38bdf8" stroke-width="1.5"/>
+    <line x1="120" y1="170" x2="180" y2="50"  stroke="#666" stroke-dasharray="3 3"/>
+    <line x1="300" y1="170" x2="300" y2="50"  stroke="#666" stroke-dasharray="3 3"/>
+    <line x1="480" y1="170" x2="420" y2="50"  stroke="#666" stroke-dasharray="3 3"/>
+    <circle cx="120" cy="170" r="7" fill="#38bdf8"/>
+    <circle cx="240" cy="170" r="7" fill="#38bdf8"/>
+    <circle cx="300" cy="170" r="7" fill="#38bdf8"/>
+    <circle cx="360" cy="170" r="7" fill="#38bdf8"/>
+    <circle cx="480" cy="170" r="7" fill="#38bdf8"/>
+
+    <!-- layer 0 nodes -->
+    <g stroke="#4ade80" stroke-width="1">
+      <line x1="80"  y1="290" x2="140" y2="290"/>
+      <line x1="140" y1="290" x2="200" y2="290"/>
+      <line x1="200" y1="290" x2="260" y2="290"/>
+      <line x1="260" y1="290" x2="320" y2="290"/>
+      <line x1="320" y1="290" x2="380" y2="290"/>
+      <line x1="380" y1="290" x2="440" y2="290"/>
+      <line x1="440" y1="290" x2="500" y2="290"/>
+      <line x1="500" y1="290" x2="560" y2="290"/>
+    </g>
+    <g stroke="#666" stroke-dasharray="3 3">
+      <line x1="120" y1="170" x2="140" y2="290"/>
+      <line x1="240" y1="170" x2="260" y2="290"/>
+      <line x1="360" y1="170" x2="380" y2="290"/>
+      <line x1="480" y1="170" x2="500" y2="290"/>
+    </g>
+    <g fill="#4ade80">
+      <circle cx="80"  cy="290" r="5"/>
+      <circle cx="140" cy="290" r="5"/>
+      <circle cx="200" cy="290" r="5"/>
+      <circle cx="260" cy="290" r="5"/>
+      <circle cx="320" cy="290" r="5"/>
+      <circle cx="380" cy="290" r="5"/>
+      <circle cx="440" cy="290" r="5"/>
+      <circle cx="500" cy="290" r="5"/>
+      <circle cx="560" cy="290" r="5"/>
+    </g>
+
+    <!-- query path -->
+    <text x="180" y="22" fill="#fbbf24" font-size="12">🔎 query enters here</text>
+    <line x1="180" y1="50" x2="240" y2="170" stroke="#fbbf24" stroke-width="2"/>
+    <line x1="240" y1="170" x2="260" y2="290" stroke="#fbbf24" stroke-width="2"/>
+    <line x1="260" y1="290" x2="320" y2="290" stroke="#fbbf24" stroke-width="2"/>
+    <text x="320" y="312" fill="#fbbf24" font-size="12">✅ found nearest!</text>
+  </svg>
+
+  <div class="analogy">
+    🚇 <b>Analogy — Subway with Express Lines:</b><br/>
+    Bottom layer = every single station. Middle layer = regional trains stopping at fewer stations. Top layer = bullet trains hitting just a few hubs.<br/>
+    To get to a far destination, you start with the express, jump down to regional, then to local — covering huge distances in just a few hops. That's exactly how HNSW search travels through vector space.
+  </div>
+</section>
+
+<!-- 4. Filtering superpower -->
+<section>
+  <h2>4. Qdrant's Superpower: Filtered Vector Search</h2>
+  <p>Most vector DBs filter <em>after</em> finding nearest neighbors (post-filtering), which can miss results. Qdrant uses <b>filterable HNSW</b> — it filters <em>during</em> the graph walk, guaranteeing accurate results even with strict filters.</p>
+
+  <pre>POST /collections/movies/points/search
+{
+  "vector": [0.12, -0.44, ...],
+  "limit": 5,
+  "filter": {
+    "must": [
+      { "key": "genre", "match": { "value": "sci-fi" } },
+      { "key": "year",  "range": { "gte": 2000 } }
+    ]
+  }
+}</pre>
+
+  <div class="analogy">
+    🛒 <b>Analogy — Smart Shopping Mall Directory:</b><br/>
+    You ask: <i>"Show me stores similar to Apple, but only ones on the 2nd floor that are open after 9 PM."</i> A normal directory would list nearest stores, then filter — and might return zero. Qdrant walks the directory while applying filters at every step, so you always get the best matching open stores.
+  </div>
+</section>
+
+<!-- 5. How search happens -->
+<section>
+  <h2>5. How Searching Actually Happens</h2>
+
+  <div class="step"><div class="num">1</div><div><b>You send a query vector</b> (and optional filter) to Qdrant.</div></div>
+  <div class="step"><div class="num">2</div><div><b>Entry point</b> on the top HNSW layer is selected.</div></div>
+  <div class="step"><div class="num">3</div><div><b>Greedy hop</b>: at each node, jump to the neighbor closest to <code>q</code> (that also matches the filter).</div></div>
+  <div class="step"><div class="num">4</div><div><b>Drop a layer</b> when no closer neighbor exists; repeat hopping in finer detail.</div></div>
+  <div class="step"><div class="num">5</div><div><b>At layer 0</b>, collect <code>top-k</code> nearest points and return their IDs, scores, and payload.</div></div>
+
+  <div class="analogy">
+    🗺️ <b>Analogy — Treasure Hunt with a Helicopter:</b><br/>
+    Start in a helicopter (top layer) for a wide view, spot the right region, descend to a car (middle layer) to drive to the right neighborhood, then walk on foot (bottom layer) to find the exact treasure. Each step gets <em>more precise</em>.
+  </div>
+</section>
+
+<!-- 6. Live demo -->
+<section>
+  <h2>6. Try It! — Mini Qdrant Simulator</h2>
+  <p>A toy in-browser version. Type a query, set a filter, and watch the top results — just like calling the Qdrant API.</p>
+
+  <div class="demo">
+    <input id="q" type="text" placeholder='e.g. "sci-fi about dreams" or "romantic ship"' style="width:55%"/>
+    <select id="genre">
+      <option value="">Any genre</option>
+      <option value="sci-fi">genre = sci-fi</option>
+      <option value="romance">genre = romance</option>
+      <option value="action">genre = action</option>
+      <option value="drama">genre = drama</option>
+    </select>
+    <select id="year">
+      <option value="">Any year</option>
+      <option value="2000">year ≥ 2000</option>
+      <option value="2010">year ≥ 2010</option>
+      <option value="2020">year ≥ 2020</option>
+    </select>
+    <button onclick="runQuery()">🚀 Search</button>
+    <div id="results" class="result"></div>
+  </div>
+</section>
+
+<!-- 7. Real Code -->
+<section>
+  <h2>7. Real Python Example</h2>
+<pre>from qdrant_client import QdrantClient
+from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue, Range
+
+client = QdrantClient(url="http://localhost:6333")
+
+# 1. Create a collection
+client.recreate_collection(
+    collection_name="movies",
+    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+)
+
+# 2. Insert points (vector + payload)
+client.upsert(
+    collection_name="movies",
+    points=[
+        PointStruct(id=1, vector=[...], payload={"title":"Inception","year":2010,"genre":"sci-fi"}),
+        PointStruct(id=2, vector=[...], payload={"title":"Titanic",  "year":1997,"genre":"romance"}),
+    ],
+)
+
+# 3. Search with filter
+results = client.search(
+    collection_name="movies",
+    query_vector=[...],
+    limit=5,
+    query_filter=Filter(must=[
+        FieldCondition(key="genre", match=MatchValue(value="sci-fi")),
+        FieldCondition(key="year",  range=Range(gte=2000)),
+    ]),
+)
+for r in results:
+    print(r.id, r.score, r.payload)</pre>
+
+  <div class="tip">
+    💡 Run Qdrant locally in seconds: <code>docker run -p 6333:6333 qdrant/qdrant</code>
+  </div>
+</section>
+
+<!-- 8. Comparison -->
+<section>
+  <h2>8. Qdrant vs Friends — Quick Comparison</h2>
+  <table>
+    <tr><th>Feature</th><th>FAISS</th><th>Chroma</th><th>Qdrant</th></tr>
+    <tr><td>Type</td><td>Library</td><td>Embedded DB</td><td>Full DB / Server</td></tr>
+    <tr><td>Language</td><td>C++</td><td>Python</td><td><b>Rust</b> 🦀</td></tr>
+    <tr><td>Filtering</td><td>❌</td><td>Basic</td><td>✅ Advanced (during search)</td></tr>
+    <tr><td>API</td><td>Python only</td><td>Python</td><td>REST + gRPC + clients</td></tr>
+    <tr><td>Production scale</td><td>Manual</td><td>Small/medium</td><td>✅ Built for it</td></tr>
+    <tr><td>Best for</td><td>Research, raw speed</td><td>Prototypes, RAG</td><td>Real apps, complex filters</td></tr>
+  </table>
+</section>
+
+<!-- 9. Use cases -->
+<section>
+  <h2>9. Where Qdrant Shines</h2>
+  <div class="grid">
+    <div class="card"><h4>🛒 E-commerce Search</h4>"Find shoes similar to this, under ₹3000, in stock."</div>
+    <div class="card"><h4>🎬 Recommendations</h4>Personalized at production scale.</div>
+    <div class="card"><h4>🤖 RAG at Scale</h4>Millions of docs with rich filters.</div>
+    <div class="card"><h4>🛡️ Anomaly Detection</h4>Flag points far from "normal".</div>
+    <div class="card"><h4>👀 Image / Face Search</h4>Match images by visual similarity.</div>
+    <div class="card"><h4>🔍 Hybrid Search</h4>Combine keyword + semantic + filter.</div>
+  </div>
+</section>
+
+<!-- 10. Recap -->
+<section>
+  <h2>10. One-Line Recap</h2>
+  <p style="font-size:1.15rem;text-align:center;color:var(--accent)">
+    <b>Qdrant = a fast, production-grade vector engine that finds similar things AND respects your filters — in milliseconds.</b>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Built for classroom use • Open this file in any browser • No internet required
+</footer>
+
+<script>
+  // Mini Qdrant simulator: similarity (token-overlap) + payload filters
+  const points = [
+    { id:1,  title:"Inception",        year:2010, genre:"sci-fi",  text:"sci-fi mind bending dreams within dreams" },
+    { id:2,  title:"Interstellar",     year:2014, genre:"sci-fi",  text:"sci-fi space wormhole black hole love time" },
+    { id:3,  title:"The Matrix",       year:1999, genre:"sci-fi",  text:"sci-fi simulated reality hacker chosen one" },
+    { id:4,  title:"Arrival",          year:2016, genre:"sci-fi",  text:"sci-fi aliens language linguist time" },
+    { id:5,  title:"Titanic",          year:1997, genre:"romance", text:"romance ship sinking love tragic ocean" },
+    { id:6,  title:"La La Land",       year:2016, genre:"romance", text:"romance jazz musician dreams los angeles" },
+    { id:7,  title:"The Notebook",     year:2004, genre:"romance", text:"romance lovers letters memory rain" },
+    { id:8,  title:"John Wick",        year:2014, genre:"action",  text:"action assassin guns revenge dog" },
+    { id:9,  title:"Mad Max Fury Road",year:2015, genre:"action",  text:"action desert chase cars apocalypse" },
+    { id:10, title:"Avengers Endgame", year:2019, genre:"action",  text:"action superheroes time travel save universe" },
+    { id:11, title:"Forrest Gump",     year:1994, genre:"drama",   text:"drama life journey love history simple" },
+    { id:12, title:"The Pursuit of Happyness", year:2006, genre:"drama", text:"drama poverty father son hope success" },
+    { id:13, title:"Dune",             year:2021, genre:"sci-fi",  text:"sci-fi desert planet spice prophecy chosen" },
+  ];
+
+  const synonyms = {
+    dream:["dreams","sleep","mind","sci-fi","inception"],
+    space:["cosmos","galaxy","planet","universe","stars"],
+    ship:["boat","ocean","sea","sinking","titanic"],
+    love:["romance","romantic","lovers","heart"],
+    fight:["action","guns","battle","war"],
+    aliens:["sci-fi","space","ufo"],
+    hero:["superhero","superheroes","action"],
+    sad:["drama","tragic","loss"],
+  };
+
+  function tokens(s){
+    return s.toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean);
+  }
+  function expand(toks){
+    const out = new Set(toks);
+    toks.forEach(t => (synonyms[t]||[]).forEach(s => out.add(s)));
+    return [...out];
+  }
+  function score(query, doc){
+    const q = expand(tokens(query));
+    const d = tokens(doc);
+    let hits = 0;
+    q.forEach(w => { if (d.includes(w)) hits++; });
+    return hits === 0 ? 1 : Math.max(0.05, 1 - hits / Math.max(q.length, 1));
+  }
+
+  function runQuery(){
+    const q = document.getElementById('q').value.trim();
+    const g = document.getElementById('genre').value;
+    const y = parseInt(document.getElementById('year').value || "0", 10);
+    const out = document.getElementById('results');
+    out.innerHTML = "";
+    if (!q){ out.innerHTML = '<div class="meta">Enter a query above and press Search.</div>'; return; }
+
+    let pool = points;
+    if (g) pool = pool.filter(p => p.genre === g);
+    if (y) pool = pool.filter(p => p.year >= y);
+
+    const ranked = pool
+      .map(p => ({...p, score: score(q, p.text + " " + p.title)}))
+      .sort((a,b) => a.score - b.score)
+      .slice(0, 5);
+
+    const filterDesc = [g && `genre=${g}`, y && `year≥${y}`].filter(Boolean).join(", ") || "none";
+
+    out.innerHTML =
+      `<div class="meta">🚀 query → embedded → HNSW search with filters [${filterDesc}] → ${pool.length} candidates → top 5:</div>` +
+      (ranked.length === 0
+        ? '<div class="item">No matches. Try loosening the filter!</div>'
+        : ranked.map(r => `
+          <div class="item">
+            <span class="score">distance ${r.score.toFixed(2)}</span>
+            <b>#${r.id} — ${r.title}</b>
+            <span class="badge">${r.genre}</span>
+            <span class="badge">${r.year}</span><br/>
+            <span class="meta">${r.text}</span>
+          </div>`).join(""));
+  }
+
+  document.getElementById('q').value = "sci-fi about dreams";
+  runQuery();
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') runQuery(); });
+</script>
+
+</body>
+</html>

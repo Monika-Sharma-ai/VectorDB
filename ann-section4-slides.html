@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ANN · Section 4 — Graph-Based Methods</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+    --soft:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px}
+  .slide{
+    width:1280px;height:720px;background:var(--panel);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:48px 56px;display:grid;grid-template-rows:auto 1fr auto;
+    page-break-after:always;position:relative;overflow:hidden;
+  }
+  .slide::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,#10b981,#22c55e);
+  }
+  .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#047857;font-weight:700}
+  h1{font-size:38px;margin:6px 0 4px;line-height:1.1;letter-spacing:-.01em}
+  h2{font-size:24px;margin:0;color:var(--muted);font-weight:500}
+  .body{display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center;margin-top:14px}
+  .text p{font-size:17px;line-height:1.55;color:#1f2937;margin:0 0 12px}
+  .text ul{margin:0;padding-left:20px}
+  .text li{font-size:16px;line-height:1.5;margin:6px 0;color:#1f2937}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px}
+  .panel{background:var(--soft);border-radius:14px;padding:14px;height:100%;display:flex;align-items:center;justify-content:center}
+  .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+  .stepgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .step{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12px;color:#334155}
+  .step b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#047857}
+  .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+  .pill.good{background:#dcfce7;color:#065f46}
+  .pill.bad{background:#fee2e2;color:#991b1b}
+  text{font-family:Inter,system-ui,sans-serif}
+  @media print{ body{background:#fff} .deck{gap:0;padding:0} .slide{box-shadow:none;border-radius:0;width:100vw;height:100vh}}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ============== SLIDE 1: NSW ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 4 · Graph-Based · Slide 1 of 4</div>
+    <h1>NSW — Navigable Small World</h1>
+    <h2>Build a graph where each point links to a few neighbors. Walk greedily toward the query.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> Like asking a stranger "who do you know that's closer?" — random insertion creates both <b>short hops</b> (precision) and <b>long hops</b> (jumps), the small-world property.</p>
+      <div class="stepgrid">
+        <div class="step"><b>Build</b>Insert points one by one; connect to M closest already in graph</div>
+        <div class="step"><b>Property</b>Mix of short + long edges emerges naturally</div>
+        <div class="step"><b>Query</b>Start anywhere, hop to closer neighbor each step</div>
+        <div class="step"><b>Stop</b>When no neighbor is closer (local minimum)</div>
+      </div>
+      <p style="margin-top:10px;color:var(--muted)"><b>Weakness:</b> can get stuck in <i>local minima</i> on a single layer → fixed by HNSW.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">NSW Graph + Greedy Search Path</text>
+
+        <!-- edges (short + long) -->
+        <g stroke="#cbd5e1" stroke-width="1.4">
+          <line x1="100" y1="100" x2="180" y2="130"/>
+          <line x1="180" y1="130" x2="260" y2="100"/>
+          <line x1="260" y1="100" x2="340" y2="140"/>
+          <line x1="340" y1="140" x2="420" y2="120"/>
+          <line x1="420" y1="120" x2="500" y2="170"/>
+          <line x1="100" y1="100" x2="140" y2="240"/>
+          <line x1="180" y1="130" x2="220" y2="260"/>
+          <line x1="260" y1="100" x2="300" y2="240"/>
+          <line x1="340" y1="140" x2="380" y2="280"/>
+          <line x1="420" y1="120" x2="460" y2="280"/>
+          <line x1="140" y1="240" x2="220" y2="260"/>
+          <line x1="220" y1="260" x2="300" y2="240"/>
+          <line x1="300" y1="240" x2="380" y2="280"/>
+          <line x1="380" y1="280" x2="460" y2="280"/>
+          <line x1="140" y1="240" x2="180" y2="350"/>
+          <line x1="220" y1="260" x2="280" y2="360"/>
+          <line x1="380" y1="280" x2="430" y2="360"/>
+          <line x1="180" y1="350" x2="280" y2="360"/>
+          <line x1="280" y1="360" x2="430" y2="360"/>
+          <!-- long-range edges -->
+          <line x1="100" y1="100" x2="500" y2="170" stroke="#a78bfa" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <line x1="180" y1="350" x2="460" y2="280" stroke="#a78bfa" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <line x1="260" y1="100" x2="280" y2="360" stroke="#a78bfa" stroke-width="1.4" stroke-dasharray="4 3"/>
+        </g>
+
+        <!-- nodes -->
+        <g>
+          <circle cx="100" cy="100" r="9" fill="#0f172a"/>
+          <circle cx="180" cy="130" r="9" fill="#0f172a"/>
+          <circle cx="260" cy="100" r="9" fill="#0f172a"/>
+          <circle cx="340" cy="140" r="9" fill="#0f172a"/>
+          <circle cx="420" cy="120" r="9" fill="#0f172a"/>
+          <circle cx="500" cy="170" r="9" fill="#0f172a"/>
+          <circle cx="140" cy="240" r="9" fill="#0f172a"/>
+          <circle cx="220" cy="260" r="9" fill="#0f172a"/>
+          <circle cx="300" cy="240" r="9" fill="#0f172a"/>
+          <circle cx="380" cy="280" r="9" fill="#0f172a"/>
+          <circle cx="460" cy="280" r="9" fill="#0f172a"/>
+          <circle cx="180" cy="350" r="9" fill="#0f172a"/>
+          <circle cx="280" cy="360" r="9" fill="#0f172a"/>
+          <circle cx="430" cy="360" r="9" fill="#0f172a"/>
+        </g>
+
+        <!-- traversal path (highlight) -->
+        <g stroke="#16a34a" stroke-width="3.2" fill="none">
+          <line x1="100" y1="100" x2="500" y2="170"/>
+          <line x1="500" y1="170" x2="460" y2="280"/>
+          <line x1="460" y1="280" x2="430" y2="360"/>
+        </g>
+        <g fill="#16a34a">
+          <circle cx="100" cy="100" r="11" stroke="#fff" stroke-width="2"/>
+          <circle cx="500" cy="170" r="11" stroke="#fff" stroke-width="2"/>
+          <circle cx="460" cy="280" r="11" stroke="#fff" stroke-width="2"/>
+          <circle cx="430" cy="360" r="11" stroke="#fff" stroke-width="2"/>
+        </g>
+
+        <!-- query star -->
+        <g transform="translate(540,378)">
+          <circle r="14" fill="#dc2626" stroke="#fff" stroke-width="3"/>
+          <text y="5" text-anchor="middle" font-size="14" fill="#fff" font-weight="800">★</text>
+        </g>
+        <text x="540" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Q</text>
+
+        <!-- legend -->
+        <g transform="translate(30,55)">
+          <rect width="200" height="62" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+          <line x1="14" y1="20" x2="40" y2="20" stroke="#cbd5e1" stroke-width="2"/>
+          <text x="48" y="24" font-size="11" fill="#334155">short edge</text>
+          <line x1="14" y1="40" x2="40" y2="40" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="48" y="44" font-size="11" fill="#334155">long-range edge</text>
+          <line x1="14" y1="58" x2="40" y2="58" stroke="#16a34a" stroke-width="3"/>
+          <text x="48" y="62" font-size="11" fill="#334155">greedy path</text>
+        </g>
+
+        <!-- step labels -->
+        <text x="100" y="92" font-size="10" font-weight="700" fill="#16a34a">start</text>
+        <text x="500" y="162" font-size="10" font-weight="700" fill="#16a34a">hop 1</text>
+        <text x="460" y="272" font-size="10" font-weight="700" fill="#16a34a">hop 2</text>
+        <text x="430" y="352" font-size="10" font-weight="700" fill="#16a34a">hop 3 → done</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Graph-Based Methods</span><span>1 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 2: HNSW Structure ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 4 · Graph-Based · Slide 2 of 4</div>
+    <h1>HNSW — Hierarchical Navigable Small World ⭐</h1>
+    <h2>Stack multiple NSW graphs like a skip-list. Top = sparse long jumps; bottom = dense precision.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Why hierarchy</span> Prevents getting stuck in local minima — top layers do the long jumps for free.</p>
+      <ul>
+        <li>Each point gets a random level <b>l</b> (geometric distribution → few high-level nodes)</li>
+        <li><b>Layer 0</b> contains every point; <b>upper layers</b> are progressively sparser</li>
+        <li>Search descends top → bottom, refining at each layer</li>
+      </ul>
+      <p style="margin-top:10px;color:var(--muted)"><b>Knobs:</b> <code>M</code> (neighbors per node), <code>efConstruction</code> (build quality), <code>efSearch</code> (query recall vs latency).</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">3-Layer HNSW Structure</text>
+
+        <!-- LAYER 2 -->
+        <g>
+          <rect x="30" y="50" width="560" height="80" rx="10" fill="#ecfeff" stroke="#06b6d4"/>
+          <text x="44" y="70" font-size="11" font-weight="700" fill="#0891b2">Layer 2 · sparse · long jumps</text>
+          <line x1="100" y1="100" x2="280" y2="100" stroke="#0891b2" stroke-width="1.6" stroke-dasharray="5 3"/>
+          <line x1="280" y1="100" x2="480" y2="100" stroke="#0891b2" stroke-width="1.6" stroke-dasharray="5 3"/>
+          <circle cx="100" cy="100" r="8" fill="#06b6d4"/>
+          <circle cx="280" cy="100" r="8" fill="#06b6d4"/>
+          <circle cx="480" cy="100" r="8" fill="#06b6d4"/>
+          <text x="100" y="92" font-size="9" fill="#0e7490" font-weight="700" text-anchor="middle">entry</text>
+        </g>
+
+        <!-- LAYER 1 -->
+        <g>
+          <rect x="30" y="150" width="560" height="100" rx="10" fill="#f0fdf4" stroke="#22c55e"/>
+          <text x="44" y="170" font-size="11" font-weight="700" fill="#15803d">Layer 1 · medium</text>
+          <g stroke="#16a34a" stroke-width="1.4">
+            <line x1="100" y1="210" x2="180" y2="210"/>
+            <line x1="180" y1="210" x2="280" y2="210"/>
+            <line x1="280" y1="210" x2="380" y2="210"/>
+            <line x1="380" y1="210" x2="480" y2="210"/>
+            <line x1="180" y1="210" x2="380" y2="210" stroke-dasharray="4 3"/>
+          </g>
+          <g fill="#22c55e">
+            <circle cx="100" cy="210" r="7"/>
+            <circle cx="180" cy="210" r="7"/>
+            <circle cx="280" cy="210" r="7"/>
+            <circle cx="380" cy="210" r="7"/>
+            <circle cx="480" cy="210" r="7"/>
+            <circle cx="540" cy="210" r="7"/>
+          </g>
+        </g>
+
+        <!-- LAYER 0 -->
+        <g>
+          <rect x="30" y="270" width="560" height="120" rx="10" fill="#fefce8" stroke="#eab308"/>
+          <text x="44" y="290" font-size="11" font-weight="700" fill="#a16207">Layer 0 · dense · all points · precise</text>
+          <g stroke="#ca8a04" stroke-width="1">
+            <line x1="60" y1="340" x2="100" y2="340"/>
+            <line x1="100" y1="340" x2="140" y2="340"/>
+            <line x1="140" y1="340" x2="180" y2="340"/>
+            <line x1="180" y1="340" x2="220" y2="340"/>
+            <line x1="220" y1="340" x2="260" y2="340"/>
+            <line x1="260" y1="340" x2="300" y2="340"/>
+            <line x1="300" y1="340" x2="340" y2="340"/>
+            <line x1="340" y1="340" x2="380" y2="340"/>
+            <line x1="380" y1="340" x2="420" y2="340"/>
+            <line x1="420" y1="340" x2="460" y2="340"/>
+            <line x1="460" y1="340" x2="500" y2="340"/>
+            <line x1="500" y1="340" x2="540" y2="340"/>
+            <line x1="100" y1="340" x2="180" y2="340" stroke-dasharray="3 2"/>
+            <line x1="220" y1="340" x2="340" y2="340" stroke-dasharray="3 2"/>
+            <line x1="380" y1="340" x2="460" y2="340" stroke-dasharray="3 2"/>
+          </g>
+          <g fill="#eab308">
+            <circle cx="60" cy="340" r="5"/><circle cx="100" cy="340" r="5"/>
+            <circle cx="140" cy="340" r="5"/><circle cx="180" cy="340" r="5"/>
+            <circle cx="220" cy="340" r="5"/><circle cx="260" cy="340" r="5"/>
+            <circle cx="300" cy="340" r="5"/><circle cx="340" cy="340" r="5"/>
+            <circle cx="380" cy="340" r="5"/><circle cx="420" cy="340" r="5"/>
+            <circle cx="460" cy="340" r="5"/><circle cx="500" cy="340" r="5"/>
+            <circle cx="540" cy="340" r="5"/>
+          </g>
+        </g>
+
+        <!-- vertical column showing same node at multiple layers -->
+        <g stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 2">
+          <line x1="280" y1="108" x2="280" y2="200"/>
+          <line x1="280" y1="218" x2="280" y2="334"/>
+          <line x1="480" y1="108" x2="480" y2="200"/>
+          <line x1="480" y1="218" x2="480" y2="334"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Graph-Based Methods</span><span>2 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 3: HNSW Query Walk ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 4 · Graph-Based · Slide 3 of 4</div>
+    <h1>HNSW Search — Top-Down Greedy Descent</h1>
+    <h2>Coarse jumps at the top, fine beam search at the bottom.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Algorithm</span> Enter at top layer's entry point. Greedy walk → drop one layer → repeat. At Layer 0, beam-search with <code>efSearch</code> candidates.</p>
+      <div class="stepgrid">
+        <div class="step"><b>L2</b>Greedy from entry → local min</div>
+        <div class="step"><b>L1</b>Continue from that node → refine</div>
+        <div class="step"><b>L0</b>Beam search with efSearch=200</div>
+        <div class="step"><b>Out</b>Top-K nearest neighbors</div>
+      </div>
+      <p style="margin-top:12px;color:var(--muted)"><b>Complexity</b>: ~<b>O(log N)</b> per query · <b>Recall</b>: 95–99%+ at well-tuned ef.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Query traversal across layers</text>
+
+        <!-- L2 -->
+        <rect x="30" y="50" width="560" height="80" rx="10" fill="#ecfeff" stroke="#06b6d4"/>
+        <text x="44" y="68" font-size="11" font-weight="700" fill="#0891b2">Layer 2</text>
+        <g stroke="#0891b2" stroke-width="1.4" stroke-dasharray="5 3">
+          <line x1="80" y1="100" x2="240" y2="100"/>
+          <line x1="240" y1="100" x2="420" y2="100"/>
+          <line x1="420" y1="100" x2="540" y2="100"/>
+        </g>
+        <g fill="#06b6d4">
+          <circle cx="80" cy="100" r="9" stroke="#fff" stroke-width="2"/>
+          <circle cx="240" cy="100" r="7"/>
+          <circle cx="420" cy="100" r="9"/>
+          <circle cx="540" cy="100" r="7"/>
+        </g>
+        <text x="80" y="92" font-size="9" font-weight="700" fill="#0e7490" text-anchor="middle">entry</text>
+        <!-- highlight path L2 -->
+        <line x1="80" y1="100" x2="420" y2="100" stroke="#dc2626" stroke-width="3"/>
+        <text x="250" y="92" font-size="10" font-weight="700" fill="#dc2626" text-anchor="middle">hop closer to Q</text>
+
+        <!-- drop arrow -->
+        <line x1="420" y1="115" x2="420" y2="155" stroke="#dc2626" stroke-width="2.5" marker-end="url(#dn1)"/>
+        <defs>
+          <marker id="dn1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+          </marker>
+        </defs>
+
+        <!-- L1 -->
+        <rect x="30" y="160" width="560" height="80" rx="10" fill="#f0fdf4" stroke="#22c55e"/>
+        <text x="44" y="178" font-size="11" font-weight="700" fill="#15803d">Layer 1</text>
+        <g stroke="#16a34a" stroke-width="1.4">
+          <line x1="80" y1="210" x2="180" y2="210"/>
+          <line x1="180" y1="210" x2="280" y2="210"/>
+          <line x1="280" y1="210" x2="370" y2="210"/>
+          <line x1="370" y1="210" x2="420" y2="210"/>
+          <line x1="420" y1="210" x2="500" y2="210"/>
+          <line x1="500" y1="210" x2="540" y2="210"/>
+        </g>
+        <g fill="#22c55e">
+          <circle cx="80" cy="210" r="7"/><circle cx="180" cy="210" r="7"/>
+          <circle cx="280" cy="210" r="7"/><circle cx="370" cy="210" r="7"/>
+          <circle cx="420" cy="210" r="9" stroke="#fff" stroke-width="2"/>
+          <circle cx="500" cy="210" r="7"/><circle cx="540" cy="210" r="7"/>
+        </g>
+        <line x1="420" y1="210" x2="500" y2="210" stroke="#dc2626" stroke-width="3"/>
+        <text x="460" y="202" font-size="10" font-weight="700" fill="#dc2626" text-anchor="middle">refine</text>
+
+        <line x1="500" y1="225" x2="500" y2="265" stroke="#dc2626" stroke-width="2.5" marker-end="url(#dn1)"/>
+
+        <!-- L0 -->
+        <rect x="30" y="270" width="560" height="120" rx="10" fill="#fefce8" stroke="#eab308"/>
+        <text x="44" y="288" font-size="11" font-weight="700" fill="#a16207">Layer 0 · beam search</text>
+        <g stroke="#ca8a04" stroke-width="1">
+          <line x1="60" y1="340" x2="540" y2="340"/>
+        </g>
+        <g fill="#eab308">
+          <circle cx="60" cy="340" r="5"/><circle cx="100" cy="340" r="5"/>
+          <circle cx="140" cy="340" r="5"/><circle cx="180" cy="340" r="5"/>
+          <circle cx="220" cy="340" r="5"/><circle cx="260" cy="340" r="5"/>
+          <circle cx="300" cy="340" r="5"/><circle cx="340" cy="340" r="5"/>
+          <circle cx="380" cy="340" r="5"/><circle cx="420" cy="340" r="5"/>
+          <circle cx="460" cy="340" r="5"/><circle cx="500" cy="340" r="6" stroke="#fff" stroke-width="2"/>
+          <circle cx="540" cy="340" r="5"/>
+        </g>
+        <!-- beam region -->
+        <ellipse cx="510" cy="340" rx="60" ry="20" fill="#fde68a" fill-opacity=".5" stroke="#f59e0b" stroke-dasharray="3 3"/>
+        <text x="510" y="372" text-anchor="middle" font-size="10" font-weight="700" fill="#a16207">efSearch beam</text>
+
+        <!-- query Q -->
+        <g transform="translate(550,340)">
+          <circle r="11" fill="#dc2626" stroke="#fff" stroke-width="2.5"/>
+          <text y="4" text-anchor="middle" font-size="11" fill="#fff" font-weight="800">★</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Graph-Based Methods</span><span>3 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 4: DiskANN ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 4 · Graph-Based · Slide 4 of 4</div>
+    <h1>DiskANN — Billion-Scale Graphs on SSD</h1>
+    <h2>Keep tiny PQ codes in RAM for fast distance estimates; full vectors + Vamana graph live on SSD.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Why</span> HNSW + full vectors at 1B scale = TBs of RAM. DiskANN keeps RAM small and lets the SSD do the storage work.</p>
+      <ul>
+        <li><b>Vamana graph</b> on SSD — HNSW-style navigability, single layer</li>
+        <li><b>PQ-compressed</b> vectors in RAM — fast approximate distance</li>
+        <li>Only when a candidate looks promising does it <b>fetch the full vector</b> from disk</li>
+      </ul>
+      <p style="margin-top:12px;color:var(--muted)"><b>Result:</b> billion-vector ANN on a single machine with ~64 GB RAM.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">RAM ⇄ SSD architecture</text>
+
+        <!-- RAM box -->
+        <g transform="translate(40,60)">
+          <rect width="220" height="280" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+          <text x="110" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#1e3a8a">RAM</text>
+          <text x="110" y="46" text-anchor="middle" font-size="11" fill="#1e3a8a">~tens of GB</text>
+
+          <!-- compressed vectors -->
+          <rect x="20" y="65" width="180" height="80" rx="8" fill="#fff" stroke="#1d4ed8"/>
+          <text x="110" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">PQ-compressed vectors</text>
+          <g font-family="monospace" font-size="10" fill="#1e3a8a">
+            <text x="32" y="108">v₁: 42 17 200 5 88 ...</text>
+            <text x="32" y="124">v₂: 11 90 14 7 199 ...</text>
+            <text x="32" y="140">⋮</text>
+          </g>
+
+          <!-- entry points -->
+          <rect x="20" y="160" width="180" height="50" rx="8" fill="#fff" stroke="#1d4ed8"/>
+          <text x="110" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Entry points</text>
+          <text x="110" y="198" text-anchor="middle" font-size="10" fill="#1e3a8a">(graph navigation seeds)</text>
+
+          <!-- distance lookup -->
+          <rect x="20" y="225" width="180" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+          <text x="110" y="248" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">fast PQ distance</text>
+        </g>
+
+        <!-- bidirectional arrow -->
+        <g transform="translate(280,180)">
+          <line x1="0" y1="-30" x2="0" y2="30" stroke="#475569" stroke-width="0"/>
+          <path d="M0,-40 L 60,-40" stroke="#0f172a" stroke-width="2" marker-end="url(#aR)"/>
+          <path d="M60,40 L 0,40" stroke="#0f172a" stroke-width="2" marker-end="url(#aL)"/>
+          <text x="30" y="-48" text-anchor="middle" font-size="10" fill="#0f172a" font-weight="700">filter</text>
+          <text x="30" y="60" text-anchor="middle" font-size="10" fill="#0f172a" font-weight="700">verify</text>
+          <defs>
+            <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/></marker>
+            <marker id="aL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/></marker>
+          </defs>
+        </g>
+
+        <!-- SSD box -->
+        <g transform="translate(360,60)">
+          <rect width="220" height="280" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+          <text x="110" y="28" text-anchor="middle" font-size="14" font-weight="800" fill="#78350f">SSD</text>
+          <text x="110" y="46" text-anchor="middle" font-size="11" fill="#78350f">~TBs cheap</text>
+
+          <!-- Vamana graph -->
+          <rect x="20" y="65" width="180" height="100" rx="8" fill="#fff" stroke="#d97706"/>
+          <text x="110" y="84" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">Vamana graph</text>
+          <!-- mini graph -->
+          <g stroke="#d97706" stroke-width="1.2">
+            <line x1="40" y1="120" x2="80" y2="135"/>
+            <line x1="80" y1="135" x2="130" y2="115"/>
+            <line x1="130" y1="115" x2="170" y2="140"/>
+            <line x1="80" y1="135" x2="120" y2="155"/>
+            <line x1="120" y1="155" x2="170" y2="140"/>
+            <line x1="40" y1="120" x2="120" y2="155"/>
+          </g>
+          <g fill="#d97706">
+            <circle cx="40" cy="120" r="4"/><circle cx="80" cy="135" r="4"/>
+            <circle cx="130" cy="115" r="4"/><circle cx="170" cy="140" r="4"/>
+            <circle cx="120" cy="155" r="4"/>
+          </g>
+
+          <!-- Full vectors -->
+          <rect x="20" y="180" width="180" height="80" rx="8" fill="#fff" stroke="#d97706"/>
+          <text x="110" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">Full float vectors</text>
+          <g font-family="monospace" font-size="10" fill="#78350f">
+            <text x="34" y="222">v₁: [0.12, −0.7, 0.31, ...]</text>
+            <text x="34" y="238">v₂: [0.04, 0.55, −0.2, ...]</text>
+            <text x="34" y="254">⋮ (1B × 768 floats)</text>
+          </g>
+        </g>
+
+        <!-- Bottom: query flow -->
+        <g transform="translate(40,355)">
+          <rect width="540" height="44" rx="10" fill="#0f172a"/>
+          <text x="270" y="20" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="700">
+            Query Q  →  greedy walk on graph using PQ distance  →  re-rank top-K with disk vectors
+          </text>
+          <text x="270" y="36" text-anchor="middle" font-size="11" fill="#93c5fd">
+            ~1B vectors · single machine · ~64 GB RAM
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Graph-Based Methods</span><span>4 / 4</span></div>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ANN · Section 1 — Intuition & Curse of Dimensionality</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+    --accent:#2563eb; --accent2:#7c3aed; --good:#10b981; --warn:#ef4444;
+    --line:#cbd5e1; --soft:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px}
+  .slide{
+    width:1280px;height:720px;background:var(--panel);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:48px 56px;display:grid;grid-template-rows:auto 1fr auto;
+    page-break-after:always;position:relative;overflow:hidden;
+  }
+  .slide::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+  }
+  .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:40px;margin:6px 0 4px;line-height:1.1;letter-spacing:-.01em}
+  h2{font-size:28px;margin:0;color:var(--muted);font-weight:500}
+  .body{display:grid;grid-template-columns:1fr 1.15fr;gap:36px;align-items:center;margin-top:16px}
+  .text p{font-size:18px;line-height:1.55;color:#1f2937;margin:0 0 14px}
+  .text ul{margin:0;padding-left:20px}
+  .text li{font-size:17px;line-height:1.55;margin:8px 0;color:#1f2937}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px}
+  .panel{background:var(--soft);border-radius:14px;padding:18px;height:100%;display:flex;align-items:center;justify-content:center}
+  .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+  .kbd{background:#0f172a;color:#fff;padding:2px 8px;border-radius:6px;font-size:12px}
+  text{font-family:Inter,system-ui,sans-serif}
+
+  /* print */
+  @media print{
+    body{background:#fff}
+    .deck{gap:0;padding:0}
+    .slide{box-shadow:none;border-radius:0;width:100vw;height:100vh}
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ============== SLIDE 1 ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 1 · Slide 1 of 3</div>
+    <h1>What is Nearest Neighbor Search?</h1>
+    <h2>Find the closest vectors to a query in some embedding space.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Definition</span> Given a query <b>Q</b>, return the data points closest to it under some distance (L2, cosine, inner product).</p>
+      <ul>
+        <li><b>Image search</b> — find similar photos</li>
+        <li><b>Recommenders</b> — items close to user vector</li>
+        <li><b>RAG / semantic search</b> — passages near the question</li>
+        <li><b>Deduplication</b> — near-identical content</li>
+      </ul>
+      <p style="margin-top:14px;color:var(--muted)"><b>Exact NN</b> compares Q against <i>every</i> point — accurate but <b>O(N · d)</b> per query.</p>
+    </div>
+
+    <div class="panel">
+      <!-- Diagram: 2D scatter with query and nearest neighbor highlighted -->
+      <svg viewBox="0 0 560 420" width="100%" height="100%">
+        <defs>
+          <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#2563eb" stop-opacity=".25"/>
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+          </radialGradient>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="20" width="520" height="380" rx="14" fill="#fff" stroke="#cbd5e1"/>
+        <!-- axes -->
+        <line x1="50" y1="370" x2="520" y2="370" stroke="#94a3b8" stroke-width="1.2"/>
+        <line x1="50" y1="40"  x2="50"  y2="370" stroke="#94a3b8" stroke-width="1.2"/>
+        <text x="510" y="390" font-size="12" fill="#64748b">x₁</text>
+        <text x="30"  y="50"  font-size="12" fill="#64748b">x₂</text>
+
+        <!-- halo for NN region -->
+        <circle cx="330" cy="200" r="70" fill="url(#halo)"/>
+
+        <!-- dataset points -->
+        <g fill="#0f172a">
+          <circle cx="110" cy="110" r="6"/>
+          <circle cx="180" cy="180" r="6"/>
+          <circle cx="240" cy="120" r="6"/>
+          <circle cx="200" cy="280" r="6"/>
+          <circle cx="430" cy="90"  r="6"/>
+          <circle cx="470" cy="320" r="6"/>
+          <circle cx="380" cy="300" r="6"/>
+          <circle cx="120" cy="320" r="6"/>
+          <circle cx="300" cy="340" r="6"/>
+          <circle cx="450" cy="200" r="6"/>
+        </g>
+
+        <!-- nearest neighbor highlighted -->
+        <circle cx="370" cy="180" r="8" fill="#10b981" stroke="#065f46" stroke-width="2"/>
+        <text x="382" y="176" font-size="13" fill="#065f46" font-weight="700">Nearest</text>
+
+        <!-- query -->
+        <polygon points="330,182 322,200 338,200" fill="#2563eb"/>
+        <circle cx="330" cy="200" r="9" fill="#2563eb" stroke="#fff" stroke-width="3"/>
+        <text x="300" y="232" font-size="14" fill="#1e3a8a" font-weight="700">Query Q</text>
+
+        <!-- arrow from Q to NN -->
+        <line x1="330" y1="200" x2="365" y2="184" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+        <!-- legend -->
+        <g transform="translate(60,55)">
+          <rect width="170" height="58" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+          <circle cx="16" cy="20" r="5" fill="#0f172a"/><text x="28" y="24" font-size="12" fill="#334155">Dataset point</text>
+          <circle cx="16" cy="42" r="6" fill="#2563eb"/><text x="28" y="46" font-size="12" fill="#334155">Query</text>
+          <circle cx="110" cy="42" r="6" fill="#10b981"/><text x="122" y="46" font-size="12" fill="#334155">Nearest</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>Approximate Nearest Neighbor · Teaching Module</span><span>1 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 2 ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 1 · Slide 2 of 3</div>
+    <h1>Why <i>Approximate</i>?</h1>
+    <h2>Trade a tiny bit of accuracy for massive speed and memory savings.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p>At <b>1B vectors × 768 dims</b>, brute-force is impossible in real time.</p>
+      <ul>
+        <li><b>Exact</b> — scans every point. 100% recall, slow.</li>
+        <li><b>Approximate</b> — searches a small region. ~95–99% recall, <b>1000× faster</b>.</li>
+      </ul>
+      <p style="margin-top:14px;color:var(--muted)">You pick the operating point on the <b>recall ↔ speed ↔ memory</b> triangle.</p>
+      <div style="margin-top:10px">
+        <span class="kbd">efSearch ↑ recall ↑ latency ↑</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <defs>
+          <linearGradient id="exactBox" x1="0" x2="1">
+            <stop offset="0" stop-color="#fee2e2"/><stop offset="1" stop-color="#fecaca"/>
+          </linearGradient>
+          <linearGradient id="annBox" x1="0" x2="1">
+            <stop offset="0" stop-color="#dcfce7"/><stop offset="1" stop-color="#bbf7d0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- left panel: exact -->
+        <g transform="translate(20,30)">
+          <rect width="280" height="360" rx="14" fill="url(#exactBox)" stroke="#fca5a5"/>
+          <text x="140" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#991b1b">EXACT SEARCH</text>
+          <text x="140" y="48" text-anchor="middle" font-size="12" fill="#7f1d1d">scans entire dataset</text>
+
+          <!-- big region covering all -->
+          <rect x="20" y="70" width="240" height="260" rx="10" fill="#fff" stroke="#fca5a5" stroke-dasharray="6 4"/>
+          <!-- points -->
+          <g fill="#0f172a">
+            <circle cx="50" cy="100" r="4"/><circle cx="90" cy="120" r="4"/><circle cx="140" cy="95" r="4"/>
+            <circle cx="200" cy="110" r="4"/><circle cx="240" cy="140" r="4"/>
+            <circle cx="60" cy="160" r="4"/><circle cx="110" cy="180" r="4"/><circle cx="170" cy="170" r="4"/>
+            <circle cx="225" cy="195" r="4"/><circle cx="50" cy="220" r="4"/>
+            <circle cx="100" cy="240" r="4"/><circle cx="160" cy="250" r="4"/>
+            <circle cx="215" cy="260" r="4"/><circle cx="80" cy="290" r="4"/>
+            <circle cx="180" cy="300" r="4"/><circle cx="240" cy="295" r="4"/>
+          </g>
+          <!-- query -->
+          <circle cx="140" cy="200" r="8" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <text x="140" y="350" text-anchor="middle" font-size="13" fill="#7f1d1d" font-weight="600">100% recall · O(N·d)</text>
+        </g>
+
+        <!-- right panel: ann -->
+        <g transform="translate(320,30)">
+          <rect width="280" height="360" rx="14" fill="url(#annBox)" stroke="#86efac"/>
+          <text x="140" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#065f46">APPROXIMATE SEARCH</text>
+          <text x="140" y="48" text-anchor="middle" font-size="12" fill="#065f46">scans a small neighborhood</text>
+
+          <rect x="20" y="70" width="240" height="260" rx="10" fill="#fff" stroke="#86efac"/>
+          <g fill="#0f172a" opacity=".5">
+            <circle cx="50" cy="100" r="4"/><circle cx="90" cy="120" r="4"/><circle cx="240" cy="140" r="4"/>
+            <circle cx="60" cy="160" r="4"/><circle cx="225" cy="195" r="4"/><circle cx="50" cy="220" r="4"/>
+            <circle cx="215" cy="260" r="4"/><circle cx="80" cy="290" r="4"/>
+            <circle cx="240" cy="295" r="4"/>
+          </g>
+          <!-- focused region -->
+          <circle cx="140" cy="200" r="60" fill="#10b981" fill-opacity=".15" stroke="#10b981" stroke-dasharray="4 3"/>
+          <g fill="#0f172a">
+            <circle cx="140" cy="95"  r="4"/><circle cx="200" cy="110" r="4"/>
+            <circle cx="110" cy="180" r="4"/><circle cx="170" cy="170" r="4"/>
+            <circle cx="100" cy="240" r="4"/><circle cx="160" cy="250" r="4"/>
+            <circle cx="180" cy="300" r="4"/>
+          </g>
+          <circle cx="140" cy="200" r="8" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <text x="140" y="350" text-anchor="middle" font-size="13" fill="#065f46" font-weight="600">~95–99% recall · sub-linear</text>
+        </g>
+
+        <!-- vs label -->
+        <g transform="translate(295,200)">
+          <circle r="22" fill="#0f172a"/>
+          <text y="6" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">VS</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>Approximate Nearest Neighbor · Teaching Module</span><span>2 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 3 ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 1 · Slide 3 of 3</div>
+    <h1>The Curse of Dimensionality</h1>
+    <h2>In high dimensions, distances collapse — every point looks "equally far".</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p>As <b>d</b> grows, the volume of a unit ball concentrates near its <i>surface</i>; nearly all data sits at the edge.</p>
+      <ul>
+        <li>Distances <b>d_min ≈ d_max</b> → ranking becomes unstable</li>
+        <li>Tree splits prune almost nothing past ~20 dims</li>
+        <li>Brute force becomes the only <i>exact</i> option — and it's too slow</li>
+      </ul>
+      <p style="margin-top:14px;color:var(--muted)"><b>Implication:</b> we need <b>graphs</b> (HNSW) or <b>quantization</b> (IVF + PQ) — not classical trees — for modern embeddings (d = 384–1536).</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <!-- LEFT: low-dim histogram -->
+        <g transform="translate(20,30)">
+          <rect width="280" height="360" rx="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <text x="140" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1e3a8a">Low-dim (d = 2)</text>
+          <text x="140" y="46" text-anchor="middle" font-size="11" fill="#1e3a8a">distances are spread out</text>
+          <!-- axes -->
+          <line x1="40" y1="300" x2="260" y2="300" stroke="#64748b"/>
+          <line x1="40" y1="80"  x2="40"  y2="300" stroke="#64748b"/>
+          <text x="150" y="320" text-anchor="middle" font-size="11" fill="#64748b">distance</text>
+          <text x="20" y="190" font-size="11" fill="#64748b" transform="rotate(-90 20 190)">freq</text>
+          <!-- wide bell -->
+          <path d="M40,300 C 80,300 100,160 150,160 C 200,160 220,300 260,300 Z"
+                fill="#3b82f6" fill-opacity=".35" stroke="#1d4ed8" stroke-width="2"/>
+          <line x1="80" y1="300" x2="80" y2="290" stroke="#1d4ed8"/>
+          <line x1="220" y1="300" x2="220" y2="290" stroke="#1d4ed8"/>
+          <text x="80" y="285" font-size="10" fill="#1d4ed8" text-anchor="middle">d_min</text>
+          <text x="220" y="285" font-size="10" fill="#1d4ed8" text-anchor="middle">d_max</text>
+        </g>
+
+        <!-- RIGHT: high-dim histogram -->
+        <g transform="translate(320,30)">
+          <rect width="280" height="360" rx="14" fill="#fef2f2" stroke="#fecaca"/>
+          <text x="140" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#991b1b">High-dim (d = 1000)</text>
+          <text x="140" y="46" text-anchor="middle" font-size="11" fill="#991b1b">distances collapse to one value</text>
+          <line x1="40" y1="300" x2="260" y2="300" stroke="#64748b"/>
+          <line x1="40" y1="80"  x2="40"  y2="300" stroke="#64748b"/>
+          <text x="150" y="320" text-anchor="middle" font-size="11" fill="#64748b">distance</text>
+          <text x="20" y="190" font-size="11" fill="#64748b" transform="rotate(-90 20 190)">freq</text>
+          <!-- narrow tall spike -->
+          <path d="M40,300 L 140,300 C 142,300 144,90 150,90 C 156,90 158,300 160,300 L 260,300 Z"
+                fill="#ef4444" fill-opacity=".35" stroke="#b91c1c" stroke-width="2"/>
+          <line x1="142" y1="300" x2="142" y2="290" stroke="#b91c1c"/>
+          <line x1="158" y1="300" x2="158" y2="290" stroke="#b91c1c"/>
+          <text x="150" y="285" font-size="10" fill="#b91c1c" text-anchor="middle">d_min ≈ d_max</text>
+          <!-- annotation arrow -->
+          <path d="M210,140 Q180,110 158,95" fill="none" stroke="#b91c1c" stroke-width="1.4"/>
+          <text x="215" y="138" font-size="11" fill="#b91c1c">all distances pile up here</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>Approximate Nearest Neighbor · Teaching Module</span><span>3 / 3</span></div>
+</section>
+
+</div>
+</body>
+</html>

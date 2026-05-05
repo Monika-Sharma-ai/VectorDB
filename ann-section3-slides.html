@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ANN · Section 3 — Hash-Based Methods</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+    --soft:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px}
+  .slide{
+    width:1280px;height:720px;background:var(--panel);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:48px 56px;display:grid;grid-template-rows:auto 1fr auto;
+    page-break-after:always;position:relative;overflow:hidden;
+  }
+  .slide::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,#f59e0b,#eab308);
+  }
+  .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#b45309;font-weight:700}
+  h1{font-size:38px;margin:6px 0 4px;line-height:1.1;letter-spacing:-.01em}
+  h2{font-size:24px;margin:0;color:var(--muted);font-weight:500}
+  .body{display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center;margin-top:14px}
+  .text p{font-size:17px;line-height:1.55;color:#1f2937;margin:0 0 12px}
+  .text ul{margin:0;padding-left:20px}
+  .text li{font-size:16px;line-height:1.5;margin:6px 0;color:#1f2937}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px}
+  .panel{background:var(--soft);border-radius:14px;padding:14px;height:100%;display:flex;align-items:center;justify-content:center}
+  .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+  .stepgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .step{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12px;color:#334155}
+  .step b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#b45309}
+  text{font-family:Inter,system-ui,sans-serif}
+  @media print{ body{background:#fff} .deck{gap:0;padding:0} .slide{box-shadow:none;border-radius:0;width:100vw;height:100vh}}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ============== SLIDE 1: LSH ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 3 · Hash-Based · Slide 1 of 3</div>
+    <h1>Locality-Sensitive Hashing (LSH)</h1>
+    <h2>Design hash functions where similar vectors collide in the same bucket — on purpose.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> Normal hashes scatter inputs randomly. <b>LSH</b> is built so close points share a hash; far points don't.</p>
+      <div class="stepgrid">
+        <div class="step"><b>Step 1</b>Draw K random hyperplanes</div>
+        <div class="step"><b>Step 2</b>Bit_i = sign(h_i · v) → K-bit code</div>
+        <div class="step"><b>Step 3</b>Store v in bucket "code"</div>
+        <div class="step"><b>Step 4</b>Hash Q → scan its bucket only</div>
+      </div>
+      <p style="margin-top:12px;color:var(--muted)">Use <b>L</b> hash tables in parallel → boost recall (a candidate hits any of them).</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <!-- LEFT: hyperplanes splitting space -->
+        <g transform="translate(15,20)">
+          <rect width="300" height="380" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="150" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Hyperplanes Split Space</text>
+
+          <rect x="25" y="40" width="250" height="320" fill="#fffbeb" stroke="#fcd34d"/>
+          <!-- 3 random hyperplanes through center -->
+          <line x1="25"  y1="100" x2="275" y2="280" stroke="#dc2626" stroke-width="1.8"/>
+          <text x="280" y="285" font-size="11" fill="#dc2626" font-weight="700">h₁</text>
+          <line x1="60"  y1="360" x2="240" y2="40" stroke="#2563eb" stroke-width="1.8"/>
+          <text x="245" y="40" font-size="11" fill="#2563eb" font-weight="700">h₂</text>
+          <line x1="25"  y1="200" x2="275" y2="200" stroke="#16a34a" stroke-width="1.8"/>
+          <text x="280" y="200" font-size="11" fill="#16a34a" font-weight="700">h₃</text>
+
+          <!-- region labels (binary codes) -->
+          <text x="80"  y="80"  font-size="11" font-weight="700" fill="#475569">011</text>
+          <text x="200" y="80"  font-size="11" font-weight="700" fill="#475569">110</text>
+          <text x="80"  y="240" font-size="11" font-weight="700" fill="#475569">001</text>
+          <text x="200" y="240" font-size="11" font-weight="700" fill="#475569">100</text>
+          <text x="80"  y="330" font-size="11" font-weight="700" fill="#475569">101</text>
+          <text x="200" y="330" font-size="11" font-weight="700" fill="#475569">011</text>
+
+          <!-- points -->
+          <g fill="#0f172a">
+            <circle cx="100" cy="110" r="4"/><circle cx="135" cy="130" r="4"/>
+            <circle cx="210" cy="120" r="4"/><circle cx="225" cy="160" r="4"/>
+            <circle cx="80"  cy="270" r="4"/><circle cx="120" cy="290" r="4"/>
+            <circle cx="220" cy="280" r="4"/><circle cx="240" cy="300" r="4"/>
+          </g>
+          <!-- query in upper-right region -->
+          <circle cx="195" cy="140" r="8" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+          <text x="207" y="138" font-size="11" font-weight="700" fill="#7f1d1d">Q</text>
+
+          <!-- highlight bucket region -->
+          <rect x="155" y="42" width="118" height="155" fill="#fde68a" fill-opacity=".35" stroke="#f59e0b" stroke-dasharray="4 3"/>
+        </g>
+
+        <!-- RIGHT: hash buckets -->
+        <g transform="translate(335,20)">
+          <rect width="270" height="380" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="135" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Hash Buckets</text>
+
+          <g font-size="12">
+            <!-- bucket rows -->
+            <rect x="20" y="40" width="230" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="36" y="64" font-weight="700" fill="#334155">000</text>
+            <g fill="#0f172a"><circle cx="100" cy="60" r="4"/><circle cx="120" cy="60" r="4"/></g>
+
+            <rect x="20" y="90" width="230" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="36" y="114" font-weight="700" fill="#334155">001</text>
+            <g fill="#0f172a"><circle cx="100" cy="110" r="4"/><circle cx="120" cy="110" r="4"/><circle cx="140" cy="110" r="4"/></g>
+
+            <rect x="20" y="140" width="230" height="40" rx="8" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <text x="36" y="164" font-weight="700" fill="#7c2d12">110</text>
+            <g fill="#0f172a"><circle cx="100" cy="160" r="4"/><circle cx="120" cy="160" r="4"/></g>
+            <circle cx="160" cy="160" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+            <text x="172" y="164" font-size="11" font-weight="700" fill="#7f1d1d">Q lands here</text>
+
+            <rect x="20" y="190" width="230" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="36" y="214" font-weight="700" fill="#334155">011</text>
+            <g fill="#0f172a"><circle cx="100" cy="210" r="4"/><circle cx="120" cy="210" r="4"/><circle cx="140" cy="210" r="4"/><circle cx="160" cy="210" r="4"/></g>
+
+            <rect x="20" y="240" width="230" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="36" y="264" font-weight="700" fill="#334155">100</text>
+            <g fill="#0f172a"><circle cx="100" cy="260" r="4"/></g>
+
+            <rect x="20" y="290" width="230" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="36" y="314" font-weight="700" fill="#334155">101</text>
+            <g fill="#0f172a"><circle cx="100" cy="310" r="4"/><circle cx="120" cy="310" r="4"/></g>
+
+            <rect x="20" y="340" width="230" height="30" rx="8" fill="#0f172a"/>
+            <text x="135" y="360" text-anchor="middle" fill="#fff" font-weight="700">Scan ONLY bucket 110</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Hash-Based Methods</span><span>1 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 2: Random Projection ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 3 · Hash-Based · Slide 2 of 3</div>
+    <h1>Random Projection — Compress First, Search Faster</h1>
+    <h2>Multiply by a random matrix → tiny vectors that approximately preserve distances (Johnson–Lindenstrauss).</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> A randomly chosen low-dim subspace keeps pairwise distances within a small ε with high probability.</p>
+      <ul>
+        <li>Input: <b>v ∈ ℝ⁷⁶⁸</b>  →  Random matrix <b>R ∈ ℝ³²ˣ⁷⁶⁸</b>  →  Output: <b>v' ∈ ℝ³²</b></li>
+        <li>‖v'_a − v'_b‖ ≈ ‖v_a − v_b‖   (with small distortion)</li>
+        <li>Used as a <b>preprocessing</b> step before tree / hash / quantization</li>
+      </ul>
+      <p style="margin-top:10px;color:var(--muted)"><b>Why it works:</b> in high dim, almost every random direction is "informative" — dimensions act independently.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <!-- input vector -->
+        <g transform="translate(20,80)">
+          <text x="50" y="-10" font-size="12" fill="#475569" font-weight="700">v ∈ ℝ⁷⁶⁸</text>
+          <rect x="0" y="0" width="60" height="240" rx="6" fill="#dbeafe" stroke="#1d4ed8"/>
+          <g font-size="9" fill="#1e3a8a">
+            <text x="30" y="18" text-anchor="middle">0.12</text>
+            <text x="30" y="38" text-anchor="middle">−0.7</text>
+            <text x="30" y="58" text-anchor="middle">0.31</text>
+            <text x="30" y="78" text-anchor="middle">0.94</text>
+            <text x="30" y="98" text-anchor="middle">⋮</text>
+            <text x="30" y="120" text-anchor="middle">⋮</text>
+            <text x="30" y="142" text-anchor="middle">⋮</text>
+            <text x="30" y="164" text-anchor="middle">⋮</text>
+            <text x="30" y="186" text-anchor="middle">⋮</text>
+            <text x="30" y="210" text-anchor="middle">⋮</text>
+            <text x="30" y="230" text-anchor="middle">−0.05</text>
+          </g>
+          <text x="30" y="260" text-anchor="middle" font-size="10" fill="#1e3a8a">768 rows</text>
+        </g>
+
+        <!-- × symbol -->
+        <text x="100" y="200" font-size="28" font-weight="700" fill="#475569">×</text>
+
+        <!-- matrix R -->
+        <g transform="translate(125,80)">
+          <text x="135" y="-10" font-size="12" fill="#475569" font-weight="700">R ∈ ℝ³²ˣ⁷⁶⁸  (random Gaussian)</text>
+          <rect x="0" y="0" width="270" height="240" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+          <!-- subtle grid + random dots to evoke matrix -->
+          <g stroke="#fde68a" stroke-width="0.5">
+            <line x1="0" y1="30" x2="270" y2="30"/><line x1="0" y1="60" x2="270" y2="60"/>
+            <line x1="0" y1="90" x2="270" y2="90"/><line x1="0" y1="120" x2="270" y2="120"/>
+            <line x1="0" y1="150" x2="270" y2="150"/><line x1="0" y1="180" x2="270" y2="180"/>
+            <line x1="0" y1="210" x2="270" y2="210"/>
+            <line x1="40" y1="0" x2="40" y2="240"/><line x1="80" y1="0" x2="80" y2="240"/>
+            <line x1="120" y1="0" x2="120" y2="240"/><line x1="160" y1="0" x2="160" y2="240"/>
+            <line x1="200" y1="0" x2="200" y2="240"/><line x1="240" y1="0" x2="240" y2="240"/>
+          </g>
+          <g font-size="8" fill="#92400e">
+            <text x="20" y="20">+0.3</text><text x="60" y="20">−0.1</text><text x="100" y="20">+0.4</text>
+            <text x="140" y="20">−0.2</text><text x="180" y="20">+0.1</text><text x="220" y="20">−0.5</text>
+            <text x="20" y="50">−0.4</text><text x="60" y="50">+0.2</text><text x="100" y="50">−0.3</text>
+            <text x="140" y="50">+0.5</text><text x="180" y="50">−0.1</text><text x="220" y="50">+0.2</text>
+            <text x="20" y="80">+0.1</text><text x="60" y="80">+0.6</text><text x="100" y="80">−0.2</text>
+            <text x="140" y="80">+0.0</text><text x="180" y="80">+0.3</text><text x="220" y="80">−0.4</text>
+            <text x="135" y="135" text-anchor="middle" font-size="14" fill="#92400e">⋯ random ⋯</text>
+            <text x="20" y="200">+0.2</text><text x="60" y="200">−0.3</text><text x="100" y="200">+0.5</text>
+            <text x="140" y="200">+0.1</text><text x="180" y="200">−0.2</text><text x="220" y="200">+0.4</text>
+            <text x="20" y="225">−0.1</text><text x="60" y="225">+0.4</text><text x="100" y="225">−0.2</text>
+            <text x="140" y="225">−0.3</text><text x="180" y="225">+0.1</text><text x="220" y="225">+0.0</text>
+          </g>
+          <text x="135" y="260" text-anchor="middle" font-size="10" fill="#92400e">32 rows × 768 cols</text>
+        </g>
+
+        <!-- = symbol -->
+        <text x="415" y="200" font-size="28" font-weight="700" fill="#475569">=</text>
+
+        <!-- output vector -->
+        <g transform="translate(450,140)">
+          <text x="50" y="-10" font-size="12" fill="#475569" font-weight="700">v' ∈ ℝ³²</text>
+          <rect x="0" y="0" width="80" height="120" rx="6" fill="#dcfce7" stroke="#15803d"/>
+          <g font-size="10" fill="#065f46">
+            <text x="40" y="20" text-anchor="middle">0.42</text>
+            <text x="40" y="38" text-anchor="middle">−0.13</text>
+            <text x="40" y="56" text-anchor="middle">0.88</text>
+            <text x="40" y="74" text-anchor="middle">⋮</text>
+            <text x="40" y="100" text-anchor="middle">−0.21</text>
+          </g>
+          <text x="40" y="140" text-anchor="middle" font-size="10" fill="#065f46">32 rows</text>
+        </g>
+
+        <!-- bottom guarantee callout -->
+        <g transform="translate(20,330)">
+          <rect width="580" height="58" rx="10" fill="#0f172a"/>
+          <text x="290" y="26" text-anchor="middle" font-size="13" fill="#f8fafc" font-weight="700">
+            Johnson–Lindenstrauss guarantee
+          </text>
+          <text x="290" y="46" text-anchor="middle" font-size="12" fill="#93c5fd">
+            (1−ε)‖v_a − v_b‖²  ≤  ‖v'_a − v'_b‖²  ≤  (1+ε)‖v_a − v_b‖²
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Hash-Based Methods</span><span>2 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 3: SimHash ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 3 · Hash-Based · Slide 3 of 3</div>
+    <h1>SimHash — Binary Fingerprints for Cosine Similarity</h1>
+    <h2>K random hyperplanes → K-bit fingerprint. Compare with Hamming distance (XOR + popcount).</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> Each hyperplane votes "left or right" → one bit. Stack K bits to get a fingerprint where similar vectors share most bits.</p>
+      <ul>
+        <li><b>bit_i = sign(h_i · v)</b>  → 0 or 1</li>
+        <li><b>Hamming(a, b)</b> = number of differing bits ≈ angle between a, b</li>
+        <li>Compares millions of fingerprints in milliseconds (CPU XOR + popcount)</li>
+      </ul>
+      <p style="margin-top:10px;color:var(--muted)"><b>Famous use:</b> Google's near-duplicate web page detection at web scale.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <!-- LEFT: hyperplane voting -->
+        <g transform="translate(15,20)">
+          <rect width="300" height="380" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="150" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Hyperplane Voting</text>
+
+          <rect x="30" y="40" width="240" height="320" fill="#fffbeb" stroke="#fcd34d"/>
+          <!-- vector -->
+          <line x1="150" y1="200" x2="225" y2="120" stroke="#0f172a" stroke-width="2.5" marker-end="url(#vec)"/>
+          <defs>
+            <marker id="vec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/>
+            </marker>
+          </defs>
+          <text x="230" y="118" font-size="12" font-weight="700" fill="#0f172a">v</text>
+
+          <!-- hyperplanes through origin -->
+          <g stroke-width="1.6">
+            <line x1="40"  y1="200" x2="260" y2="200" stroke="#dc2626"/>
+            <line x1="50"  y1="320" x2="250" y2="80"  stroke="#2563eb"/>
+            <line x1="80"  y1="60"  x2="220" y2="340" stroke="#16a34a"/>
+          </g>
+          <text x="263" y="200" font-size="11" font-weight="700" fill="#dc2626">h₁</text>
+          <text x="50" y="76"  font-size="11" font-weight="700" fill="#2563eb">h₂</text>
+          <text x="223" y="346" font-size="11" font-weight="700" fill="#16a34a">h₃</text>
+
+          <!-- legend votes -->
+          <g transform="translate(40,290)" font-size="11">
+            <rect width="220" height="60" rx="8" fill="#fff" stroke="#fcd34d"/>
+            <text x="10" y="20" fill="#dc2626" font-weight="700">h₁·v &gt; 0  →  1</text>
+            <text x="10" y="38" fill="#2563eb" font-weight="700">h₂·v &gt; 0  →  1</text>
+            <text x="10" y="56" fill="#16a34a" font-weight="700">h₃·v &lt; 0  →  0</text>
+          </g>
+        </g>
+
+        <!-- RIGHT: fingerprints + Hamming -->
+        <g transform="translate(335,30)">
+          <rect width="270" height="370" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="135" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Fingerprints &amp; Hamming</text>
+
+          <!-- fingerprint cells -->
+          <g font-family="monospace" font-size="14">
+            <text x="20" y="60" font-size="11" font-weight="700" fill="#475569" font-family="Inter">v_a</text>
+            <g transform="translate(50,46)">
+              <g><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(22,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(44,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(66,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(88,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(110,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(132,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(154,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+            </g>
+
+            <text x="20" y="105" font-size="11" font-weight="700" fill="#475569" font-family="Inter">v_q</text>
+            <g transform="translate(50,91)">
+              <g><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(22,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(44,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(66,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(88,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(110,0)"><rect width="20" height="22" fill="#fee2e2" stroke="#dc2626"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(132,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(154,0)"><rect width="20" height="22" fill="#dbeafe" stroke="#1d4ed8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+            </g>
+
+            <!-- XOR row -->
+            <text x="20" y="155" font-size="11" font-weight="700" fill="#475569" font-family="Inter">XOR</text>
+            <g transform="translate(50,141)">
+              <g><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(22,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(44,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(66,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(88,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(110,0)"><rect width="20" height="22" fill="#fee2e2" stroke="#dc2626"/><text x="10" y="16" text-anchor="middle">1</text></g>
+              <g transform="translate(132,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+              <g transform="translate(154,0)"><rect width="20" height="22" fill="#f1f5f9" stroke="#94a3b8"/><text x="10" y="16" text-anchor="middle">0</text></g>
+            </g>
+          </g>
+
+          <!-- popcount result -->
+          <g transform="translate(20,200)">
+            <rect width="230" height="50" rx="10" fill="#dcfce7" stroke="#15803d"/>
+            <text x="115" y="22" text-anchor="middle" font-size="13" fill="#065f46" font-weight="700">popcount = 1</text>
+            <text x="115" y="40" text-anchor="middle" font-size="11" fill="#065f46">→ very similar (small angle)</text>
+          </g>
+
+          <g transform="translate(20,265)">
+            <rect width="230" height="40" rx="10" fill="#fee2e2" stroke="#b91c1c"/>
+            <text x="115" y="18" text-anchor="middle" font-size="12" fill="#7f1d1d" font-weight="700">If popcount &gt; threshold</text>
+            <text x="115" y="34" text-anchor="middle" font-size="11" fill="#7f1d1d">→ different documents</text>
+          </g>
+
+          <text x="135" y="335" text-anchor="middle" font-size="11" fill="#475569" font-style="italic">
+            Hamming distance ≈ angle / π
+          </text>
+          <text x="135" y="352" text-anchor="middle" font-size="11" fill="#475569" font-style="italic">
+            (cosine similarity, encoded in bits)
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Hash-Based Methods</span><span>3 / 3</span></div>
+</section>
+
+</div>
+</body>
+</html>

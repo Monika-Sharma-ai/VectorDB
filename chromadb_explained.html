@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ChromaDB Explained — A Visual Guide for Students</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e1b2e;
+    --panel-2: #312e4a;
+    --text: #ede9fe;
+    --muted: #a5a3b8;
+    --accent: #a78bfa;     /* Chroma purple */
+    --accent-2: #f9a8d4;
+    --good: #86efac;
+    --warn: #fcd34d;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, #15102b 0%, #0f0a1f 100%);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 40px 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(167,139,250,0.18), transparent 70%);
+    border-bottom: 1px solid #2a2440;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--orange));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  section {
+    background: var(--panel);
+    border: 1px solid #3a3358;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 22px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 2px dashed #4b4570;
+    padding-bottom: 8px;
+  }
+  h3 { color: var(--accent-2); }
+  code, pre {
+    background: #0b0816;
+    border: 1px solid #2a2440;
+    border-radius: 8px;
+    padding: 2px 6px;
+    color: #e9d5ff;
+    font-family: "Fira Code", Consolas, monospace;
+  }
+  pre { padding: 14px; overflow-x: auto; }
+  .analogy {
+    background: linear-gradient(135deg, rgba(249,168,212,0.12), rgba(167,139,250,0.10));
+    border-left: 4px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 14px 0;
+  }
+  .tip {
+    background: rgba(134,239,172,0.08);
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #4b4570;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent); }
+  .demo {
+    background: #0b0816;
+    border: 1px solid #3a3358;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .demo input, .demo button, .demo select {
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #4b4570;
+    background: #1e1b2e;
+    color: var(--text);
+  }
+  .demo button {
+    background: var(--accent);
+    color: #15102b;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  .demo button:hover { background: #c4b5fd; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border-bottom: 1px solid #3a3358; text-align: left; }
+  th { color: var(--accent); }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 12px 0;
+  }
+  .step .num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #15102b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pill {
+    display: inline-block;
+    background: #312e4a;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .badge { font-size: 0.85rem; padding: 2px 8px; border-radius: 6px; background: #312e4a; color: var(--accent-2); }
+  ul.clean { list-style: none; padding-left: 0; }
+  ul.clean li { padding: 6px 0; border-bottom: 1px dashed #3a3358; }
+  .result {
+    margin-top: 12px;
+    padding: 12px;
+    background: #1e1b2e;
+    border-radius: 8px;
+    border: 1px solid #3a3358;
+  }
+  .result .item {
+    padding: 8px 10px;
+    margin: 6px 0;
+    background: #2a2440;
+    border-left: 3px solid var(--accent-2);
+    border-radius: 4px;
+  }
+  .meta { color: var(--muted); font-size: 0.85rem; }
+  .score { float: right; color: var(--good); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧁 ChromaDB Explained</h1>
+  <p>The friendly, developer-first vector database — explained for students.</p>
+  <div>
+    <span class="pill">Open Source</span>
+    <span class="pill">Embeddings</span>
+    <span class="pill">Semantic Search</span>
+    <span class="pill">RAG</span>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. What is Chroma -->
+<section>
+  <h2>1. What is ChromaDB?</h2>
+  <p><b>Chroma</b> is an open-source <b>vector database</b> made to be ridiculously easy to use. With <em>~3 lines of Python</em>, you can store text, automatically turn it into embeddings, and ask questions like <i>"find me things similar to this."</i></p>
+
+  <div class="analogy">
+    🧁 <b>Analogy — The Smart Spice Rack:</b><br/>
+    Imagine a kitchen spice rack where each jar is labeled not just by name, but by its <em>flavor profile</em> (sweet, spicy, citrusy, smoky...). When you ask "what goes with cinnamon?", the rack itself <b>glows</b> at the jars with similar flavor profiles. <br/>
+    Chroma is that magical rack — but for documents, paragraphs, images, or any data.
+  </div>
+
+  <h3>What makes Chroma special?</h3>
+  <div class="grid">
+    <div class="card"><h4>🪶 Lightweight</h4>Runs in-process — no separate server needed.</div>
+    <div class="card"><h4>🤝 Batteries Included</h4>Auto-embeds your text using a built-in model.</div>
+    <div class="card"><h4>📦 Persistent</h4>Save to disk so your data survives restarts.</div>
+    <div class="card"><h4>🏷️ Metadata Filters</h4>Filter results by tags, dates, categories.</div>
+  </div>
+</section>
+
+<!-- 2. Core ideas -->
+<section>
+  <h2>2. The Three Core Concepts</h2>
+  <ul class="clean">
+    <li>📚 <b>Collection</b> — like a "table" or "folder" that holds related items.</li>
+    <li>📄 <b>Document</b> — the raw text/data you put in (e.g., a paragraph, a movie review).</li>
+    <li>🔢 <b>Embedding</b> — the vector version of that document, generated by an AI model.</li>
+  </ul>
+
+  <pre>collection.add(
+    ids        = ["doc1", "doc2", "doc3"],
+    documents  = ["The cat sat on the mat",
+                  "Dogs love long walks",
+                  "Pizza recipe with basil"],
+    metadatas  = [{"topic":"pets"}, {"topic":"pets"}, {"topic":"food"}]
+)</pre>
+
+  <p>You give Chroma <b>raw text</b>; it secretly converts each into a <b>vector</b> (a list of ~384 numbers) using its default embedding model (<code>all-MiniLM-L6-v2</code>) — unless you supply your own.</p>
+
+  <div class="analogy">
+    🌈 <b>Analogy — Words → Coordinates of Meaning:</b><br/>
+    Each sentence becomes a <em>point on a giant map</em> where similar meanings live nearby. "The cat sat" and "Dogs love walks" sit close (both about pets). "Pizza recipe" lives across town.
+  </div>
+</section>
+
+<!-- 3. How storage works -->
+<section>
+  <h2>3. What Chroma Stores Behind the Scenes</h2>
+  <table>
+    <tr><th>id</th><th>document</th><th>embedding</th><th>metadata</th></tr>
+    <tr><td>doc1</td><td>"The cat sat on the mat"</td><td>[0.12, -0.44, 0.88, ...]</td><td>{topic: pets}</td></tr>
+    <tr><td>doc2</td><td>"Dogs love long walks"</td><td>[0.15, -0.41, 0.85, ...]</td><td>{topic: pets}</td></tr>
+    <tr><td>doc3</td><td>"Pizza recipe with basil"</td><td>[-0.71, 0.10, 0.44, ...]</td><td>{topic: food}</td></tr>
+  </table>
+  <p style="margin-top:10px">Internally Chroma uses <b>HNSW</b> (Hierarchical Navigable Small World graph) — a graph index where each vector points to its closest neighbors, so search hops <em>friend-to-friend</em> instead of checking everyone.</p>
+
+  <div class="analogy">
+    🌍 <b>Analogy — A City of Friends:</b><br/>
+    Each document is a person living somewhere on a map. Each person knows their closest friends. To find someone like "Alice", you don't visit every house — you ask Alice's friends, then their friends. In a few hops, you've found the most similar people. That's how HNSW (and Chroma) finds matches in milliseconds.
+  </div>
+</section>
+
+<!-- 4. How search happens -->
+<section>
+  <h2>4. How Searching Actually Happens</h2>
+
+  <div class="step"><div class="num">1</div><div><b>You ask a question</b> in plain English: <code>"animals as pets"</code>.</div></div>
+  <div class="step"><div class="num">2</div><div><b>Chroma embeds the query</b> using the same model used for stored docs → <code>q = [0.13, -0.42, 0.86, ...]</code>.</div></div>
+  <div class="step"><div class="num">3</div><div><b>It walks the HNSW graph</b> from a start node, hopping to neighbors that are closer to <code>q</code>, until it can't improve.</div></div>
+  <div class="step"><div class="num">4</div><div><b>Optionally apply metadata filters</b> (e.g., <code>where={"topic":"pets"}</code>) so only matching docs are returned.</div></div>
+  <div class="step"><div class="num">5</div><div><b>Return top-k</b> results: ids, documents, distances, and metadata.</div></div>
+
+  <div class="analogy">
+    🔍 <b>Analogy — Asking a Concierge:</b><br/>
+    You ask the hotel concierge: <i>"I want a quiet vegetarian restaurant near a park."</i> They don't read every menu — they recall the few places matching the <em>vibe</em>, filter by your "vegetarian" preference, and hand you the top 3.
+  </div>
+</section>
+
+<!-- 5. Live demo -->
+<section>
+  <h2>5. Try It! — A Mini Chroma Simulator</h2>
+  <p>This is a tiny browser-only simulation. Type a query, and watch the documents ranked by "semantic similarity" (computed here with simple word-overlap, just for illustration).</p>
+
+  <div class="demo">
+    <input id="q" type="text" placeholder='Try: "I love my dog" or "italian dinner"' style="width:60%"/>
+    <select id="filter">
+      <option value="">All topics</option>
+      <option value="pets">topic = pets</option>
+      <option value="food">topic = food</option>
+      <option value="space">topic = space</option>
+      <option value="tech">topic = tech</option>
+    </select>
+    <button onclick="runQuery()">🔎 Search</button>
+    <div id="results" class="result"></div>
+  </div>
+</section>
+
+<!-- 6. Real Code -->
+<section>
+  <h2>6. Real Python Example</h2>
+<pre>import chromadb
+
+# 1. Start a client (in-memory or persistent)
+client = chromadb.PersistentClient(path="./chroma_db")
+
+# 2. Create or get a collection
+col = client.get_or_create_collection("movies")
+
+# 3. Add documents (Chroma auto-embeds them!)
+col.add(
+    ids       = ["m1", "m2", "m3"],
+    documents = ["A mind-bending sci-fi about dreams",
+                 "A romantic story on a sinking ship",
+                 "Action hero saves the day with guns"],
+    metadatas = [{"genre":"sci-fi"}, {"genre":"romance"}, {"genre":"action"}]
+)
+
+# 4. Ask a semantic question
+results = col.query(
+    query_texts = ["movies about lucid dreaming"],
+    n_results   = 2,
+    where       = {"genre": "sci-fi"}        # optional filter
+)
+
+print(results["documents"])
+print(results["distances"])</pre>
+
+  <div class="tip">
+    💡 No need to call an embedding API yourself — Chroma does it under the hood with <code>sentence-transformers</code> (you can swap in OpenAI / Cohere / your own model).
+  </div>
+</section>
+
+<!-- 7. Chroma vs FAISS -->
+<section>
+  <h2>7. Chroma vs FAISS — Quick Comparison</h2>
+  <table>
+    <tr><th>Feature</th><th>FAISS</th><th>ChromaDB</th></tr>
+    <tr><td>Type</td><td>Library (just an index)</td><td>Full vector database</td></tr>
+    <tr><td>Stores raw text?</td><td>❌ Vectors only</td><td>✅ Yes</td></tr>
+    <tr><td>Auto-embedding?</td><td>❌ You provide vectors</td><td>✅ Built-in</td></tr>
+    <tr><td>Metadata filters?</td><td>❌ Not natively</td><td>✅ Yes</td></tr>
+    <tr><td>Persistence</td><td>Manual save/load</td><td>Automatic on disk</td></tr>
+    <tr><td>Best for</td><td>Max raw speed, billions of vectors</td><td>Apps, prototypes, RAG, ease of use</td></tr>
+  </table>
+</section>
+
+<!-- 8. Use cases -->
+<section>
+  <h2>8. Where ChromaDB Shines</h2>
+  <div class="grid">
+    <div class="card"><h4>🤖 RAG Chatbots</h4>Find relevant docs to feed an LLM.</div>
+    <div class="card"><h4>📚 Knowledge Base Search</h4>Search wikis & company docs by meaning.</div>
+    <div class="card"><h4>🛒 Product Recommendations</h4>"Items similar to this one."</div>
+    <div class="card"><h4>📝 Note-Taking Apps</h4>Find related notes you forgot you wrote.</div>
+    <div class="card"><h4>🧪 Quick Prototyping</h4>Stand up a vector DB in 5 minutes.</div>
+    <div class="card"><h4>🎓 Learning Vector DBs</h4>The friendliest place to start.</div>
+  </div>
+</section>
+
+<!-- 9. Recap -->
+<section>
+  <h2>9. One-Line Recap</h2>
+  <p style="font-size:1.15rem;text-align:center;color:var(--accent)">
+    <b>ChromaDB = a friendly notebook for your AI's memory — drop in text, ask in plain English, get back what means the same thing.</b>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Built for classroom use • Open this file in any browser • No internet required
+</footer>
+
+<script>
+  // Tiny in-browser "Chroma simulator"
+  // Real Chroma uses ML embeddings + HNSW; here we mimic ranking with token overlap.
+  const docs = [
+    { id:"d1", text:"The cat sat lazily on the mat by the window",       topic:"pets" },
+    { id:"d2", text:"Dogs love long walks in the park every morning",    topic:"pets" },
+    { id:"d3", text:"My puppy plays fetch and chases its tail",          topic:"pets" },
+    { id:"d4", text:"Pizza recipe with fresh basil and mozzarella",      topic:"food" },
+    { id:"d5", text:"How to bake sourdough bread at home",               topic:"food" },
+    { id:"d6", text:"Italian pasta carbonara with eggs and pancetta",    topic:"food" },
+    { id:"d7", text:"NASA launches a new mission to explore Mars",       topic:"space" },
+    { id:"d8", text:"Black holes warp space and time dramatically",      topic:"space" },
+    { id:"d9", text:"Python is a popular programming language",          topic:"tech" },
+    { id:"d10",text:"GPUs accelerate deep learning model training",      topic:"tech" },
+  ];
+
+  // expand "synonyms" so the demo feels semantic-ish
+  const synonyms = {
+    dog:["puppy","dogs","canine","pet"],
+    cat:["kitten","cats","feline","pet"],
+    pet:["dog","cat","puppy","kitten","animal","animals"],
+    pets:["dog","cat","puppy","kitten","animal","animals","pet"],
+    animal:["dog","cat","puppy","pet"],
+    animals:["dog","cat","puppy","pet"],
+    food:["pizza","pasta","bread","recipe","cooking"],
+    italian:["pizza","pasta","carbonara","mozzarella"],
+    dinner:["pizza","pasta","recipe"],
+    space:["nasa","mars","black","hole","planet","cosmos"],
+    cosmos:["space","stars","galaxy","mars"],
+    code:["python","programming","gpu","deep","learning"],
+    ai:["deep","learning","gpu","model"],
+    love:["like","adore","enjoy"],
+  };
+
+  function tokens(s){
+    return s.toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean);
+  }
+  function expand(toks){
+    const out = new Set(toks);
+    toks.forEach(t => (synonyms[t]||[]).forEach(s => out.add(s)));
+    return [...out];
+  }
+  function score(query, doc){
+    const q = expand(tokens(query));
+    const d = tokens(doc);
+    let hits = 0;
+    q.forEach(w => { if (d.includes(w)) hits++; });
+    // mimic a "distance": lower = closer
+    return hits === 0 ? 1 : Math.max(0.05, 1 - hits / Math.max(q.length, 1));
+  }
+
+  function runQuery(){
+    const q = document.getElementById('q').value.trim();
+    const f = document.getElementById('filter').value;
+    const out = document.getElementById('results');
+    out.innerHTML = "";
+
+    if (!q){ out.innerHTML = '<div class="meta">Type a query above and press Search.</div>'; return; }
+
+    let pool = docs;
+    if (f) pool = pool.filter(d => d.topic === f);
+
+    const ranked = pool
+      .map(d => ({...d, dist: score(q, d.text)}))
+      .sort((a,b) => a.dist - b.dist)
+      .slice(0, 3);
+
+    out.innerHTML =
+      `<div class="meta">Query embedded → searched ${pool.length} docs${f? " (filtered topic="+f+")":""} → top 3:</div>` +
+      ranked.map(r => `
+        <div class="item">
+          <span class="score">distance ${r.dist.toFixed(2)}</span>
+          <b>${r.id}</b> <span class="badge">${r.topic}</span><br/>
+          ${r.text}
+        </div>`).join("");
+  }
+
+  // Run an initial example
+  document.getElementById('q').value = "I love my dog";
+  runQuery();
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') runQuery(); });
+</script>
+
+</body>
+</html>

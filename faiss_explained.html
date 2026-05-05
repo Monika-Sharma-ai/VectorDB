@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FAISS Explained — A Visual Guide for Students</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #22d3ee;
+    --accent-2: #f472b6;
+    --good: #4ade80;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 40px 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(34,211,238,0.15), transparent 70%);
+    border-bottom: 1px solid #1f2937;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; }
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  section {
+    background: var(--panel);
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 22px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 2px dashed #475569;
+    padding-bottom: 8px;
+  }
+  h3 { color: var(--accent-2); }
+  code, pre {
+    background: #0b1220;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 2px 6px;
+    color: #e0f2fe;
+    font-family: "Fira Code", Consolas, monospace;
+  }
+  pre { padding: 14px; overflow-x: auto; }
+  .analogy {
+    background: linear-gradient(135deg, rgba(244,114,182,0.12), rgba(34,211,238,0.08));
+    border-left: 4px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 14px 0;
+  }
+  .tip {
+    background: rgba(74,222,128,0.08);
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #475569;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent); }
+  /* Interactive demo */
+  .demo {
+    background: #0b1220;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .demo input, .demo button {
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: var(--text);
+  }
+  .demo button {
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+  .demo button:hover { background: #67e8f9; }
+  svg { display: block; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
+  th { color: var(--accent); }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 12px 0;
+  }
+  .step .num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pill {
+    display: inline-block;
+    background: #334155;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔎 FAISS Explained</h1>
+  <p>A friendly, visual walkthrough of how a vector database <em>thinks</em> and <em>searches</em>.</p>
+  <div>
+    <span class="pill">Vectors</span>
+    <span class="pill">Similarity Search</span>
+    <span class="pill">Facebook AI</span>
+    <span class="pill">For Students</span>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. What is FAISS -->
+<section>
+  <h2>1. What is FAISS?</h2>
+  <p><b>FAISS</b> stands for <b>F</b>acebook <b>AI</b> <b>S</b>imilarity <b>S</b>earch. It's an open-source library built by Meta to find items that are <em>similar</em> — not equal — to a query, super fast, even among <b>billions</b> of items.</p>
+
+  <div class="analogy">
+    🎬 <b>Analogy — The Library Without Titles:</b><br/>
+    Imagine a library where every book has <em>no title</em>, only a "vibe fingerprint" (action-y, romantic, sci-fi-ish, sad...). You walk in and say:
+    <i>"Give me books that feel like <b>Inception</b>."</i><br/>
+    A normal librarian would be lost. But FAISS is a librarian who has memorized the vibe of every book and instantly hands you the <b>5 books with the most similar vibe</b>.
+  </div>
+</section>
+
+<!-- 2. What is a vector -->
+<section>
+  <h2>2. First, What is a Vector (Embedding)?</h2>
+  <p>A <b>vector</b> is just a list of numbers that captures the "meaning" of something. Words, images, songs — anything can be turned into a vector by an AI model (like <code>sentence-transformers</code> or OpenAI embeddings).</p>
+
+  <pre>"king"   → [0.21, 0.88, -0.03, 0.55, ...]  (e.g. 384 numbers)
+"queen"  → [0.19, 0.90, -0.05, 0.60, ...]
+"apple"  → [-0.71, 0.10, 0.44, -0.22, ...]</pre>
+
+  <div class="analogy">
+    🗺️ <b>Analogy — GPS Coordinates of Meaning:</b><br/>
+    Think of each word/movie/document as a <b>point on a giant map</b>. "King" and "Queen" live on the same street. "Apple" lives in a different city. <b>Distance on the map = how related they are.</b>
+  </div>
+
+  <h3>How do we measure "closeness"?</h3>
+  <ul>
+    <li><b>Euclidean distance (L2)</b> — straight-line distance, like measuring with a ruler.</li>
+    <li><b>Cosine similarity</b> — the <em>angle</em> between two arrows. Same direction = same meaning.</li>
+    <li><b>Inner product</b> — bigger = more similar (when vectors are normalized).</li>
+  </ul>
+</section>
+
+<!-- 3. Visual: 2D space -->
+<section>
+  <h2>3. Picture It in 2D</h2>
+  <p>Real vectors have hundreds of dimensions, but we can show the idea in 2D. Each dot is a movie. Click anywhere on the map to act as your "query" and see the 3 nearest neighbors light up.</p>
+
+  <div class="demo">
+    <svg id="map" width="100%" viewBox="0 0 600 360" style="background:#0b1220;border-radius:8px;cursor:crosshair">
+      <!-- axes -->
+      <line x1="30" y1="330" x2="580" y2="330" stroke="#334155"/>
+      <line x1="30" y1="30"  x2="30"  y2="330" stroke="#334155"/>
+      <text x="290" y="352" fill="#94a3b8" font-size="12">action ──→</text>
+      <text x="6" y="180" fill="#94a3b8" font-size="12" transform="rotate(-90 6,180)">romance ──→</text>
+    </svg>
+    <p style="color:var(--muted);font-size:0.9rem">Tip: click anywhere on the chart to search.</p>
+  </div>
+</section>
+
+<!-- 4. How FAISS stores -->
+<section>
+  <h2>4. How FAISS Stores Vectors (the Index)</h2>
+  <p>FAISS keeps vectors inside a structure called an <b>index</b>. Different index types trade off speed vs accuracy vs memory.</p>
+
+  <table>
+    <tr><th>Index</th><th>How it works</th><th>Speed</th><th>Accuracy</th></tr>
+    <tr><td><code>IndexFlatL2</code></td><td>Brute force — compare query to every vector</td><td>🐢 Slow on huge data</td><td>✅ 100% exact</td></tr>
+    <tr><td><code>IndexIVFFlat</code></td><td>Cluster vectors into "buckets", search a few buckets</td><td>⚡ Fast</td><td>~Approximate</td></tr>
+    <tr><td><code>IndexHNSW</code></td><td>Graph of neighbors, hop from node to node</td><td>⚡⚡ Very fast</td><td>~Approximate</td></tr>
+    <tr><td><code>IndexPQ</code></td><td>Compresses vectors (Product Quantization)</td><td>⚡ Fast + small</td><td>~Approximate</td></tr>
+  </table>
+
+  <div class="analogy">
+    🏙️ <b>Analogy — Finding a Friend in a City:</b>
+    <ul>
+      <li><b>Flat:</b> Knock on every single door. Always finds them, but slow.</li>
+      <li><b>IVF (clustering):</b> First go to the right <i>neighborhood</i>, then knock on doors there.</li>
+      <li><b>HNSW (graph):</b> Ask friends-of-friends — "Hey, who lives closest to this person?" Hop, hop, found!</li>
+      <li><b>PQ (compression):</b> Use a rough sketch instead of the full address — fits in your pocket.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5. How search happens -->
+<section>
+  <h2>5. How Searching Actually Happens</h2>
+
+  <div class="step"><div class="num">1</div><div><b>Embed your query.</b> "Movies like Inception" becomes a vector <code>q = [0.12, -0.44, 0.88, ...]</code>.</div></div>
+  <div class="step"><div class="num">2</div><div><b>Send <code>q</code> to the FAISS index.</b> Tell it how many neighbors you want, e.g. <code>k = 5</code>.</div></div>
+  <div class="step"><div class="num">3</div><div><b>FAISS computes distances</b> from <code>q</code> to candidate vectors (all of them in Flat, only nearby clusters in IVF, only graph neighbors in HNSW).</div></div>
+  <div class="step"><div class="num">4</div><div><b>Sort by distance</b> and return the <code>top-k</code> closest IDs + their distances.</div></div>
+  <div class="step"><div class="num">5</div><div><b>You map IDs back to your data</b> (movie titles, documents, images) and show them to the user.</div></div>
+
+  <div class="analogy">
+    🎯 <b>Analogy — The Smell Test:</b><br/>
+    A bloodhound (FAISS) sniffs your scent (query vector) and runs through the forest. With "Flat", it sniffs every tree. With "IVF", it knows you're probably near the river — so it only sniffs trees by the river. Same prey, way faster.
+  </div>
+</section>
+
+<!-- 6. Code -->
+<section>
+  <h2>6. Tiny Python Example</h2>
+<pre>import faiss
+import numpy as np
+
+# 1. We have 1000 movie embeddings of dimension 128
+d = 128
+movie_vectors = np.random.random((1000, d)).astype('float32')
+
+# 2. Build an index (brute-force L2)
+index = faiss.IndexFlatL2(d)
+index.add(movie_vectors)            # store them
+print(index.ntotal)                 # 1000
+
+# 3. Query: "find 5 movies similar to this one"
+query = np.random.random((1, d)).astype('float32')
+distances, ids = index.search(query, k=5)
+
+print(ids)        # indices of the 5 closest movies
+print(distances)  # how close they were</pre>
+
+  <div class="tip">
+    💡 For real apps, replace <code>np.random.random</code> with a real embedding model:
+    <code>SentenceTransformer("all-MiniLM-L6-v2").encode(texts)</code>.
+  </div>
+</section>
+
+<!-- 7. When to use -->
+<section>
+  <h2>7. When Should You Use FAISS?</h2>
+  <div class="grid">
+    <div class="card"><h4>🎬 Recommendations</h4>"Movies / songs / products like this one."</div>
+    <div class="card"><h4>📚 Semantic Search</h4>Search by meaning, not keywords.</div>
+    <div class="card"><h4>🤖 RAG for LLMs</h4>Find relevant docs to feed ChatGPT-style models.</div>
+    <div class="card"><h4>🖼️ Image Search</h4>Find visually similar pictures.</div>
+    <div class="card"><h4>🛡️ Deduplication</h4>Spot near-duplicates among millions of items.</div>
+    <div class="card"><h4>🧬 Clustering</h4>Group similar items together.</div>
+  </div>
+</section>
+
+<!-- 8. Recap -->
+<section>
+  <h2>8. One-Line Recap</h2>
+  <p style="font-size:1.15rem;text-align:center;color:var(--accent)">
+    <b>FAISS = a super-fast librarian that finds the nearest points in a high-dimensional map of meaning.</b>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Built for classroom use • Open this file in any browser • No internet required
+</footer>
+
+<script>
+  // Tiny interactive 2D nearest-neighbor demo
+  const svg = document.getElementById('map');
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  // Sample "movies" placed in (action, romance) space
+  const movies = [
+    { name: "Die Hard",       x: 520, y: 300 },
+    { name: "John Wick",      x: 540, y: 270 },
+    { name: "Mad Max",        x: 500, y: 250 },
+    { name: "Notebook",       x: 80,  y: 80  },
+    { name: "Titanic",        x: 110, y: 60  },
+    { name: "La La Land",     x: 140, y: 100 },
+    { name: "Inception",      x: 340, y: 180 },
+    { name: "Interstellar",   x: 300, y: 150 },
+    { name: "The Matrix",     x: 420, y: 220 },
+    { name: "Pride&Prejudice",x: 90,  y: 130 },
+    { name: "Avengers",       x: 470, y: 280 },
+    { name: "Her",            x: 200, y: 130 },
+    { name: "Toy Story",      x: 260, y: 250 },
+  ];
+
+  const dotEls = [];
+  movies.forEach((m, i) => {
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('cx', m.x); c.setAttribute('cy', m.y);
+    c.setAttribute('r', 7);
+    c.setAttribute('fill', '#22d3ee');
+    c.setAttribute('stroke', '#0f172a');
+    c.setAttribute('stroke-width', '2');
+    svg.appendChild(c);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', m.x + 10); t.setAttribute('y', m.y + 4);
+    t.setAttribute('fill', '#cbd5e1'); t.setAttribute('font-size', '11');
+    t.textContent = m.name;
+    svg.appendChild(t);
+    dotEls.push({ circle: c, text: t, ...m });
+  });
+
+  let queryDot = null;
+  let lines = [];
+
+  svg.addEventListener('click', (e) => {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+    // remove old query + lines
+    if (queryDot) queryDot.remove();
+    lines.forEach(l => l.remove()); lines = [];
+    dotEls.forEach(d => d.circle.setAttribute('fill', '#22d3ee'));
+
+    // find 3 nearest
+    const sorted = [...dotEls].map(d => ({
+      d,
+      dist: Math.hypot(d.x - cursor.x, d.y - cursor.y)
+    })).sort((a,b) => a.dist - b.dist).slice(0,3);
+
+    // draw lines
+    sorted.forEach(({d}) => {
+      const ln = document.createElementNS(SVG_NS, 'line');
+      ln.setAttribute('x1', cursor.x); ln.setAttribute('y1', cursor.y);
+      ln.setAttribute('x2', d.x); ln.setAttribute('y2', d.y);
+      ln.setAttribute('stroke', '#f472b6');
+      ln.setAttribute('stroke-width', '2');
+      ln.setAttribute('stroke-dasharray', '4 3');
+      svg.appendChild(ln);
+      lines.push(ln);
+      d.circle.setAttribute('fill', '#f472b6');
+    });
+
+    // draw query
+    queryDot = document.createElementNS(SVG_NS, 'circle');
+    queryDot.setAttribute('cx', cursor.x); queryDot.setAttribute('cy', cursor.y);
+    queryDot.setAttribute('r', 9);
+    queryDot.setAttribute('fill', '#fbbf24');
+    queryDot.setAttribute('stroke', '#0f172a');
+    queryDot.setAttribute('stroke-width', '2');
+    svg.appendChild(queryDot);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Milvus Explained — A Visual Guide for Students</title>
+<style>
+  :root {
+    --bg: #0a1424;
+    --panel: #11203a;
+    --panel-2: #1a2d4d;
+    --text: #e6f1ff;
+    --muted: #93a4c0;
+    --accent: #00a1ea;     /* Milvus blue */
+    --accent-2: #ffb454;
+    --good: #4ade80;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, #0a1424 0%, #050b18 100%);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 40px 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(0,161,234,0.20), transparent 70%);
+    border-bottom: 1px solid #1a2d4d;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  section {
+    background: var(--panel);
+    border: 1px solid #243f66;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 22px 0;
+    box-shadow: 0 4px 22px rgba(0,0,0,0.35);
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 2px dashed #355a82;
+    padding-bottom: 8px;
+  }
+  h3 { color: var(--accent-2); }
+  code, pre {
+    background: #050b18;
+    border: 1px solid #1a2d4d;
+    border-radius: 8px;
+    padding: 2px 6px;
+    color: #b8e2ff;
+    font-family: "Fira Code", Consolas, monospace;
+  }
+  pre { padding: 14px; overflow-x: auto; }
+  .analogy {
+    background: linear-gradient(135deg, rgba(255,180,84,0.10), rgba(0,161,234,0.10));
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 14px 0;
+  }
+  .tip {
+    background: rgba(74,222,128,0.10);
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .warn {
+    background: rgba(251,191,36,0.10);
+    border-left: 4px solid var(--warn);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #355a82;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent); }
+  .demo {
+    background: #050b18;
+    border: 1px solid #243f66;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .demo input, .demo button, .demo select {
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #355a82;
+    background: #11203a;
+    color: var(--text);
+  }
+  .demo button {
+    background: var(--accent);
+    color: #04223b;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  .demo button:hover { background: #38bdf8; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border-bottom: 1px solid #243f66; text-align: left; }
+  th { color: var(--accent); }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 12px 0;
+  }
+  .step .num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #04223b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pill {
+    display: inline-block;
+    background: #1a2d4d;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .badge { font-size: 0.8rem; padding: 2px 8px; border-radius: 6px; background: #1a2d4d; color: var(--accent-2); }
+  .result {
+    margin-top: 12px;
+    padding: 12px;
+    background: #11203a;
+    border-radius: 8px;
+    border: 1px solid #243f66;
+  }
+  .result .item {
+    padding: 8px 10px;
+    margin: 6px 0;
+    background: #1a2d4d;
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+  .meta { color: var(--muted); font-size: 0.85rem; }
+  .score { float: right; color: var(--accent-2); font-weight: 700; }
+  svg { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🪐 Milvus Explained</h1>
+  <p>The cloud-native, distributed vector database built for billion-scale AI search.</p>
+  <div>
+    <span class="pill">Open Source</span>
+    <span class="pill">Distributed</span>
+    <span class="pill">Cloud-Native</span>
+    <span class="pill">GPU Support</span>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. What is Milvus -->
+<section>
+  <h2>1. What is Milvus?</h2>
+  <p><b>Milvus</b> is an open-source, <b>distributed</b> vector database built by Zilliz. It is designed to scale from a laptop (Milvus Lite) all the way to a Kubernetes cluster searching <b>tens of billions</b> of vectors with GPU acceleration.</p>
+
+  <div class="analogy">
+    🪐 <b>Analogy — A Galactic Postal Service:</b><br/>
+    Imagine a postal service that can deliver messages anywhere in the galaxy.
+    <ul>
+      <li><b>One small office</b> (Milvus Lite) handles your village.</li>
+      <li><b>A national network</b> (Milvus Standalone) covers a whole country.</li>
+      <li><b>A galactic federation</b> (Milvus Distributed) coordinates planets, with separate departments for receiving, sorting, querying, and storing — all working in parallel.</li>
+    </ul>
+    Same address book, same envelopes — only the org chart grows. That's Milvus.
+  </div>
+
+  <h3>Why Milvus stands out</h3>
+  <div class="grid">
+    <div class="card"><h4>📊 Massive Scale</h4>Tested with 10B+ vectors in production.</div>
+    <div class="card"><h4>⚡ GPU Indexing</h4>Built-in CUDA support for 10–100× speedups.</div>
+    <div class="card"><h4>🧰 11+ Index Types</h4>HNSW, IVF, DiskANN, GPU_CAGRA, SCANN, and more.</div>
+    <div class="card"><h4>☁️ Cloud-Native</h4>Stateless components scale independently on K8s.</div>
+  </div>
+</section>
+
+<!-- 2. Core ideas -->
+<section>
+  <h2>2. Milvus's Core Concepts</h2>
+  <ul>
+    <li>📚 <b>Collection</b> — like a SQL table, but for vectors + scalar fields.</li>
+    <li>🧱 <b>Schema</b> — defines field names, types, and which is the vector field.</li>
+    <li>🧩 <b>Partition</b> — physical split inside a collection (e.g., per date or tenant) for faster filtering.</li>
+    <li>🎯 <b>Entity</b> — one row: <code>id</code> + <code>vector</code> + scalar fields.</li>
+    <li>📐 <b>Index</b> — the data structure that makes search fast (HNSW, IVF_FLAT, DiskANN…).</li>
+    <li>📏 <b>Metric</b> — <code>L2</code>, <code>IP</code> (inner product), or <code>COSINE</code>.</li>
+  </ul>
+
+  <pre>{
+  "id":     1001,
+  "vector": [0.12, -0.44, 0.88, ... 768 dims ...],
+  "title":  "Inception",
+  "year":   2010,
+  "genre":  "sci-fi"
+}</pre>
+</section>
+
+<!-- 3. Architecture -->
+<section>
+  <h2>3. Milvus Architecture (the Big Picture)</h2>
+  <p>Milvus separates compute from storage — a "shared-nothing" design where each role can scale independently.</p>
+
+  <svg viewBox="0 0 680 360" width="100%">
+    <!-- Access layer -->
+    <rect x="20"  y="20" width="640" height="60" rx="10" fill="#1a2d4d" stroke="#00a1ea"/>
+    <text x="340" y="45" text-anchor="middle" fill="#e6f1ff" font-size="13" font-weight="700">Access Layer (Proxy)</text>
+    <text x="340" y="63" text-anchor="middle" fill="#93a4c0" font-size="11">SDK clients (Python, Java, Go, REST) → load balancer → proxies</text>
+
+    <!-- Coordinator -->
+    <rect x="20" y="100" width="640" height="50" rx="10" fill="#1a2d4d" stroke="#ffb454"/>
+    <text x="340" y="123" text-anchor="middle" fill="#e6f1ff" font-size="13" font-weight="700">Coordinator Service</text>
+    <text x="340" y="141" text-anchor="middle" fill="#93a4c0" font-size="11">manages metadata, balancing, and tasks (root / data / query / index coords)</text>
+
+    <!-- Worker nodes -->
+    <rect x="20"  y="170" width="200" height="80" rx="10" fill="#1a2d4d" stroke="#00a1ea"/>
+    <text x="120" y="195" text-anchor="middle" fill="#e6f1ff" font-size="13" font-weight="700">Query Nodes</text>
+    <text x="120" y="215" text-anchor="middle" fill="#93a4c0" font-size="11">load index in RAM</text>
+    <text x="120" y="231" text-anchor="middle" fill="#93a4c0" font-size="11">run vector search</text>
+
+    <rect x="240" y="170" width="200" height="80" rx="10" fill="#1a2d4d" stroke="#00a1ea"/>
+    <text x="340" y="195" text-anchor="middle" fill="#e6f1ff" font-size="13" font-weight="700">Data Nodes</text>
+    <text x="340" y="215" text-anchor="middle" fill="#93a4c0" font-size="11">handle inserts / deletes</text>
+    <text x="340" y="231" text-anchor="middle" fill="#93a4c0" font-size="11">flush to storage</text>
+
+    <rect x="460" y="170" width="200" height="80" rx="10" fill="#1a2d4d" stroke="#00a1ea"/>
+    <text x="560" y="195" text-anchor="middle" fill="#e6f1ff" font-size="13" font-weight="700">Index Nodes</text>
+    <text x="560" y="215" text-anchor="middle" fill="#93a4c0" font-size="11">build HNSW / IVF</text>
+    <text x="560" y="231" text-anchor="middle" fill="#93a4c0" font-size="11">offline / async</text>
+
+    <!-- Storage layer -->
+    <rect x="20"  y="270" width="200" height="70" rx="10" fill="#1a2d4d" stroke="#ffb454"/>
+    <text x="120" y="295" text-anchor="middle" fill="#e6f1ff" font-size="12" font-weight="700">Meta Store</text>
+    <text x="120" y="313" text-anchor="middle" fill="#93a4c0" font-size="11">etcd</text>
+
+    <rect x="240" y="270" width="200" height="70" rx="10" fill="#1a2d4d" stroke="#ffb454"/>
+    <text x="340" y="295" text-anchor="middle" fill="#e6f1ff" font-size="12" font-weight="700">Message Queue</text>
+    <text x="340" y="313" text-anchor="middle" fill="#93a4c0" font-size="11">Pulsar / Kafka</text>
+
+    <rect x="460" y="270" width="200" height="70" rx="10" fill="#1a2d4d" stroke="#ffb454"/>
+    <text x="560" y="295" text-anchor="middle" fill="#e6f1ff" font-size="12" font-weight="700">Object Storage</text>
+    <text x="560" y="313" text-anchor="middle" fill="#93a4c0" font-size="11">MinIO / S3 / GCS</text>
+  </svg>
+
+  <div class="analogy">
+    🏭 <b>Analogy — A Modern Factory:</b><br/>
+    The <b>access layer</b> = reception desk taking orders.
+    The <b>coordinator</b> = factory manager dispatching work.
+    <b>Data / Index / Query nodes</b> = specialized assembly lines (one packs raw goods, one builds the product, one fulfills orders).
+    <b>Object storage</b> = the warehouse holding everything long-term.
+    Need more orders served? Just add more query nodes — the rest doesn't care.
+  </div>
+</section>
+
+<!-- 4. Many index types -->
+<section>
+  <h2>4. Choose Your Index — A Buffet of Options</h2>
+  <table>
+    <tr><th>Index</th><th>Strategy</th><th>Best For</th></tr>
+    <tr><td><code>FLAT</code></td><td>Brute-force exact</td><td>Small data, 100% recall needed</td></tr>
+    <tr><td><code>IVF_FLAT</code></td><td>Cluster vectors, search a few clusters</td><td>Medium scale, balanced</td></tr>
+    <tr><td><code>IVF_PQ</code></td><td>Clusters + compression</td><td>Memory-constrained, large scale</td></tr>
+    <tr><td><code>HNSW</code></td><td>Layered graph navigation</td><td>Low-latency in-memory search</td></tr>
+    <tr><td><code>DiskANN</code></td><td>Graph + SSD-resident</td><td>Billion-scale on a single node</td></tr>
+    <tr><td><code>GPU_CAGRA</code></td><td>GPU-optimized graph</td><td>Highest QPS with GPUs</td></tr>
+    <tr><td><code>SCANN</code></td><td>Google's quantization</td><td>High recall + speed</td></tr>
+  </table>
+
+  <div class="analogy">
+    🚗 <b>Analogy — Choosing a Vehicle:</b> need to deliver across town? Take a bike (FLAT). Across the country? Drive a car (HNSW). Across continents with cargo? Fly cargo plane (DiskANN). Going to space? Strap on a rocket (GPU_CAGRA). Same passengers (vectors), different vehicles for different missions.
+  </div>
+</section>
+
+<!-- 5. How search happens -->
+<section>
+  <h2>5. How Searching Actually Happens</h2>
+
+  <div class="step"><div class="num">1</div><div><b>Client sends a search</b> to the proxy: vector + <code>top_k</code> + optional scalar filter expression like <code>year &gt;= 2010 AND genre == "sci-fi"</code>.</div></div>
+  <div class="step"><div class="num">2</div><div><b>Proxy routes</b> to the right collection and forwards to <b>Query Nodes</b> holding that data.</div></div>
+  <div class="step"><div class="num">3</div><div><b>Each query node</b> runs ANN search on its index segment <em>in parallel</em>, applying scalar filters first when possible.</div></div>
+  <div class="step"><div class="num">4</div><div><b>Partial results</b> stream back to the proxy, which merges and re-ranks them globally.</div></div>
+  <div class="step"><div class="num">5</div><div><b>Top-K matches</b> are returned with IDs, distances, and any requested output fields.</div></div>
+
+  <div class="analogy">
+    📦 <b>Analogy — Amazon's Search Bar:</b><br/>
+    You search "blue running shoes". Amazon doesn't ask one warehouse — every regional warehouse searches its inventory at the same time, returns top picks, and a central system merges them. Milvus does this for vectors.
+  </div>
+</section>
+
+<!-- 6. Live demo -->
+<section>
+  <h2>6. Try It! — Mini Milvus Simulator</h2>
+  <p>This is a tiny browser-only simulator. Pick a partition, write a filter expression, and search.</p>
+
+  <div class="demo">
+    <input id="q" type="text" placeholder='e.g. "dreams and reality" or "love at sea"' style="width:50%"/>
+    <select id="partition">
+      <option value="all">partition = _all_</option>
+      <option value="recent">partition = recent (≥2010)</option>
+      <option value="classic">partition = classic (&lt;2010)</option>
+    </select>
+    <select id="genre">
+      <option value="">no genre filter</option>
+      <option value="sci-fi">genre == "sci-fi"</option>
+      <option value="romance">genre == "romance"</option>
+      <option value="action">genre == "action"</option>
+      <option value="animation">genre == "animation"</option>
+    </select>
+    <button onclick="runQuery()">🪐 Search</button>
+    <div id="results" class="result"></div>
+  </div>
+</section>
+
+<!-- 7. Real Code -->
+<section>
+  <h2>7. Real Python Example</h2>
+<pre>from pymilvus import MilvusClient, DataType
+
+# 1. Connect — Milvus Lite (file) or full server
+client = MilvusClient("milvus_demo.db")          # or uri="http://localhost:19530"
+
+# 2. Create a collection with a schema
+client.create_collection(
+    collection_name="movies",
+    dimension=384,
+    metric_type="COSINE",
+)
+
+# 3. Insert entities (vectors + scalar fields)
+client.insert(
+    collection_name="movies",
+    data=[
+        {"id": 1, "vector": [0.12, -0.44, ...],
+         "title": "Inception", "year": 2010, "genre": "sci-fi"},
+        {"id": 2, "vector": [0.21, -0.31, ...],
+         "title": "Titanic",   "year": 1997, "genre": "romance"},
+    ],
+)
+
+# 4. Search with a filter expression
+results = client.search(
+    collection_name="movies",
+    data=[[0.12, -0.44, ...]],          # query vector(s)
+    limit=5,
+    filter='year >= 2000 and genre == "sci-fi"',
+    output_fields=["title", "year", "genre"],
+)
+for hit in results[0]:
+    print(hit["id"], hit["distance"], hit["entity"])</pre>
+
+  <div class="tip">
+    💡 <b>Milvus Lite</b> runs entirely in your Python process — no Docker required. Perfect for learning and prototyping. Switch to the full server later by changing one URI.
+  </div>
+</section>
+
+<!-- 8. Comparison -->
+<section>
+  <h2>8. Milvus vs Other Vector DBs</h2>
+  <table>
+    <tr><th>Feature</th><th>FAISS</th><th>Chroma</th><th>Qdrant</th><th>Pinecone</th><th>Milvus</th></tr>
+    <tr><td>Type</td><td>Library</td><td>Embedded DB</td><td>Self-host / Cloud</td><td>SaaS only</td><td><b>Self-host or Cloud (Zilliz)</b></td></tr>
+    <tr><td>Distributed?</td><td>❌</td><td>❌</td><td>Limited</td><td>✅ Hidden</td><td>✅ Native (K8s)</td></tr>
+    <tr><td>Index types</td><td>Many</td><td>HNSW</td><td>HNSW</td><td>Proprietary</td><td><b>11+ (incl. GPU)</b></td></tr>
+    <tr><td>Filtering</td><td>❌</td><td>Basic</td><td>✅ Advanced</td><td>✅ Advanced</td><td>✅ SQL-like expressions</td></tr>
+    <tr><td>Scale</td><td>Single node</td><td>Small</td><td>Medium-Large</td><td>Auto</td><td><b>Billions</b></td></tr>
+    <tr><td>Best for</td><td>Research</td><td>Prototypes</td><td>Self-hosted prod</td><td>Easy SaaS</td><td>Massive on-prem AI</td></tr>
+  </table>
+
+  <div class="warn">
+    ⚠️ <b>Trade-off:</b> Milvus's distributed architecture is powerful but operationally heavier than Qdrant or Chroma. Use <b>Milvus Lite</b> for learning, <b>Standalone</b> for small prod, <b>Distributed</b> only when you truly need it.
+  </div>
+</section>
+
+<!-- 9. Use cases -->
+<section>
+  <h2>9. Where Milvus Shines</h2>
+  <div class="grid">
+    <div class="card"><h4>🤖 Enterprise RAG</h4>Massive private knowledge bases for LLMs.</div>
+    <div class="card"><h4>👀 Image / Video Search</h4>Reverse image lookup at billion scale.</div>
+    <div class="card"><h4>🧬 Bioinformatics</h4>Gene, protein, and molecule similarity.</div>
+    <div class="card"><h4>🛡️ Fraud / Security</h4>Match suspicious patterns across huge datasets.</div>
+    <div class="card"><h4>🛒 Recommender Systems</h4>Real-time personalization with user/item vectors.</div>
+    <div class="card"><h4>🎓 Multimodal Search</h4>Text + image + audio in one collection.</div>
+  </div>
+</section>
+
+<!-- 10. Recap -->
+<section>
+  <h2>10. One-Line Recap</h2>
+  <p style="font-size:1.15rem;text-align:center;color:var(--accent)">
+    <b>Milvus = an open-source, cloud-native vector database that scales from your laptop to a billion-vector cluster — with the widest choice of index types in the industry.</b>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Built for classroom use • Open this file in any browser • No internet required
+</footer>
+
+<script>
+  // Mini Milvus simulator
+  const entities = [
+    { id:1,  title:"Inception",          year:2010, genre:"sci-fi",    text:"sci-fi mind dreams within dreams reality thief" },
+    { id:2,  title:"Interstellar",       year:2014, genre:"sci-fi",    text:"sci-fi space wormhole black hole love time" },
+    { id:3,  title:"The Matrix",         year:1999, genre:"sci-fi",    text:"sci-fi simulated reality hacker chosen one" },
+    { id:4,  title:"Dune",               year:2021, genre:"sci-fi",    text:"sci-fi desert planet spice prophecy chosen" },
+    { id:5,  title:"Arrival",            year:2016, genre:"sci-fi",    text:"sci-fi aliens language linguist time" },
+    { id:6,  title:"Titanic",            year:1997, genre:"romance",   text:"romance ship sinking love sea ocean tragic" },
+    { id:7,  title:"La La Land",         year:2016, genre:"romance",   text:"romance jazz musician dreams los angeles" },
+    { id:8,  title:"The Notebook",       year:2004, genre:"romance",   text:"romance lovers letters memory rain" },
+    { id:9,  title:"John Wick",          year:2014, genre:"action",    text:"action assassin guns revenge dog" },
+    { id:10, title:"Mad Max",            year:2015, genre:"action",    text:"action desert chase cars apocalypse" },
+    { id:11, title:"Gladiator",          year:2000, genre:"action",    text:"action roman general revenge emperor arena" },
+    { id:12, title:"Toy Story",          year:1995, genre:"animation", text:"animation toys friendship cowboy spaceman" },
+    { id:13, title:"Finding Nemo",       year:2003, genre:"animation", text:"animation fish ocean father son journey" },
+    { id:14, title:"Spirited Away",      year:2001, genre:"animation", text:"animation girl spirits gods bathhouse" },
+  ];
+
+  const synonyms = {
+    dream:["dreams","sleep","mind","sci-fi","inception"],
+    space:["cosmos","galaxy","planet","universe","stars"],
+    sea:["ocean","ship","boat","sinking","titanic"],
+    love:["romance","romantic","lovers","heart"],
+    fight:["action","guns","battle"],
+    hero:["superhero","superheroes","action"],
+    fish:["nemo","ocean","sea"],
+    toy:["toys","cowboy","spaceman"],
+    aliens:["sci-fi","language","arrival"],
+  };
+
+  function tokens(s){
+    return s.toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean);
+  }
+  function expand(toks){
+    const out = new Set(toks);
+    toks.forEach(t => (synonyms[t]||[]).forEach(s => out.add(s)));
+    return [...out];
+  }
+  function score(query, doc){
+    const q = expand(tokens(query));
+    const d = tokens(doc);
+    let hits = 0;
+    q.forEach(w => { if (d.includes(w)) hits++; });
+    return hits === 0 ? 1 : Math.max(0.05, 1 - hits / Math.max(q.length, 1));
+  }
+
+  function runQuery(){
+    const q = document.getElementById('q').value.trim();
+    const p = document.getElementById('partition').value;
+    const g = document.getElementById('genre').value;
+    const out = document.getElementById('results');
+    out.innerHTML = "";
+    if (!q){ out.innerHTML = '<div class="meta">Enter a query above and press Search.</div>'; return; }
+
+    let pool = entities;
+    if (p === "recent")  pool = pool.filter(v => v.year >= 2010);
+    if (p === "classic") pool = pool.filter(v => v.year <  2010);
+    if (g) pool = pool.filter(v => v.genre === g);
+
+    const ranked = pool
+      .map(v => ({...v, dist: score(q, v.text + " " + v.title)}))
+      .sort((a,b) => a.dist - b.dist)
+      .slice(0, 5);
+
+    const expr = [
+      `partition="${p}"`,
+      g && `genre == "${g}"`
+    ].filter(Boolean).join(" and ");
+
+    out.innerHTML =
+      `<div class="meta">🪐 proxy → query nodes (parallel) • expr [${expr}] • ${pool.length} candidates → top 5:</div>` +
+      (ranked.length === 0
+        ? '<div class="item">No matches. Try removing a filter.</div>'
+        : ranked.map(r => `
+          <div class="item">
+            <span class="score">distance ${r.dist.toFixed(2)}</span>
+            <b>#${r.id} — ${r.title}</b>
+            <span class="badge">${r.genre}</span>
+            <span class="badge">${r.year}</span><br/>
+            <span class="meta">${r.text}</span>
+          </div>`).join(""));
+  }
+
+  document.getElementById('q').value = "dreams and reality";
+  runQuery();
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') runQuery(); });
+</script>
+
+</body>
+</html>

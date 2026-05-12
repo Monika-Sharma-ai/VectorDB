@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pinecone Explained — A Visual Guide for Students</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #141a2e;
+    --panel-2: #1e2542;
+    --text: #e6ecff;
+    --muted: #9aa3c0;
+    --accent: #00d4aa;     /* Pinecone teal */
+    --accent-2: #ffa84a;   /* warm orange */
+    --good: #4ade80;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, #0b1020 0%, #060a16 100%);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 40px 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(0,212,170,0.18), transparent 70%);
+    border-bottom: 1px solid #1e2542;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  section {
+    background: var(--panel);
+    border: 1px solid #2a335a;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 22px 0;
+    box-shadow: 0 4px 22px rgba(0,0,0,0.35);
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 2px dashed #3a4470;
+    padding-bottom: 8px;
+  }
+  h3 { color: var(--accent-2); }
+  code, pre {
+    background: #060a16;
+    border: 1px solid #1e2542;
+    border-radius: 8px;
+    padding: 2px 6px;
+    color: #b8f5e6;
+    font-family: "Fira Code", Consolas, monospace;
+  }
+  pre { padding: 14px; overflow-x: auto; }
+  .analogy {
+    background: linear-gradient(135deg, rgba(255,168,74,0.10), rgba(0,212,170,0.10));
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 14px 0;
+  }
+  .tip {
+    background: rgba(74,222,128,0.10);
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .warn {
+    background: rgba(251,191,36,0.10);
+    border-left: 4px solid var(--warn);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #3a4470;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent); }
+  .demo {
+    background: #060a16;
+    border: 1px solid #2a335a;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .demo input, .demo button, .demo select {
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #3a4470;
+    background: #141a2e;
+    color: var(--text);
+  }
+  .demo button {
+    background: var(--accent);
+    color: #06231d;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  .demo button:hover { background: #5eead4; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border-bottom: 1px solid #2a335a; text-align: left; }
+  th { color: var(--accent); }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 12px 0;
+  }
+  .step .num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #06231d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pill {
+    display: inline-block;
+    background: #1e2542;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .badge { font-size: 0.8rem; padding: 2px 8px; border-radius: 6px; background: #1e2542; color: var(--accent-2); }
+  .result {
+    margin-top: 12px;
+    padding: 12px;
+    background: #141a2e;
+    border-radius: 8px;
+    border: 1px solid #2a335a;
+  }
+  .result .item {
+    padding: 8px 10px;
+    margin: 6px 0;
+    background: #1e2542;
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+  .meta { color: var(--muted); font-size: 0.85rem; }
+  .score { float: right; color: var(--accent-2); font-weight: 700; }
+  svg { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌲 Pinecone Explained</h1>
+  <p>The fully managed, serverless vector database — explained for students.</p>
+  <div>
+    <span class="pill">Managed Cloud</span>
+    <span class="pill">Serverless</span>
+    <span class="pill">Production AI</span>
+    <span class="pill">RAG</span>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. What is Pinecone -->
+<section>
+  <h2>1. What is Pinecone?</h2>
+  <p><b>Pinecone</b> is a <b>fully managed, cloud-hosted vector database</b>. Unlike FAISS (a library) or Qdrant (which you can self-host), with Pinecone <em>you never run the server</em> — you call an API and Pinecone handles scaling, replication, backups, and infrastructure.</p>
+
+  <div class="analogy">
+    🌲 <b>Analogy — Renting vs Owning a Warehouse:</b><br/>
+    FAISS is like building a shelf in your garage — fast, free, but it's <em>your problem</em> when it overflows.<br/>
+    Qdrant is like leasing a warehouse — you set it up and run it.<br/>
+    <b>Pinecone is hiring Amazon to handle storage for you.</b> You drop off boxes (vectors), tell them what you need, and they handle trucks, security, and expansion. You just pay the bill.
+  </div>
+
+  <h3>Why teams pick Pinecone</h3>
+  <div class="grid">
+    <div class="card"><h4>☁️ Zero Ops</h4>No servers, no Docker, no tuning. It's a SaaS endpoint.</div>
+    <div class="card"><h4>📈 Auto-Scale</h4>Handles billions of vectors with automatic scaling.</div>
+    <div class="card"><h4>🚀 Low Latency</h4>~10–50ms queries, globally replicated.</div>
+    <div class="card"><h4>🔐 Enterprise</h4>SOC 2, GDPR, role-based access, encryption.</div>
+  </div>
+</section>
+
+<!-- 2. Core ideas -->
+<section>
+  <h2>2. Pinecone's Core Concepts</h2>
+  <ul>
+    <li>🏢 <b>Project</b> — your account workspace.</li>
+    <li>📇 <b>Index</b> — like a "table" that holds vectors of a fixed dimension.</li>
+    <li>🗂️ <b>Namespace</b> — partition inside an index (e.g., one per tenant or user).</li>
+    <li>🎯 <b>Vector</b> — <code>id</code> + <code>values</code> (the embedding) + <code>metadata</code> (JSON).</li>
+    <li>📐 <b>Metric</b> — <code>cosine</code>, <code>dotproduct</code>, or <code>euclidean</code>.</li>
+  </ul>
+
+  <pre>{
+  "id": "movie-001",
+  "values": [0.12, -0.44, 0.88, ... 1536 numbers ...],
+  "metadata": {
+    "title": "Inception",
+    "year":  2010,
+    "genre": "sci-fi"
+  }
+}</pre>
+</section>
+
+<!-- 3. Architecture -->
+<section>
+  <h2>3. How Pinecone is Architected (the Big Picture)</h2>
+
+  <svg viewBox="0 0 640 320" width="100%">
+    <!-- Client -->
+    <rect x="20" y="130" width="120" height="60" rx="10" fill="#1e2542" stroke="#00d4aa"/>
+    <text x="80" y="155" text-anchor="middle" fill="#e6ecff" font-size="13" font-weight="700">Your App</text>
+    <text x="80" y="175" text-anchor="middle" fill="#9aa3c0" font-size="11">Python / JS client</text>
+
+    <!-- API gateway -->
+    <rect x="200" y="130" width="120" height="60" rx="10" fill="#1e2542" stroke="#ffa84a"/>
+    <text x="260" y="155" text-anchor="middle" fill="#e6ecff" font-size="13" font-weight="700">API Gateway</text>
+    <text x="260" y="175" text-anchor="middle" fill="#9aa3c0" font-size="11">auth + routing</text>
+
+    <!-- Pods -->
+    <rect x="380" y="40" width="120" height="60" rx="10" fill="#1e2542" stroke="#00d4aa"/>
+    <text x="440" y="65" text-anchor="middle" fill="#e6ecff" font-size="13" font-weight="700">Pod / Shard 1</text>
+    <text x="440" y="83" text-anchor="middle" fill="#9aa3c0" font-size="11">vectors A–H</text>
+
+    <rect x="380" y="130" width="120" height="60" rx="10" fill="#1e2542" stroke="#00d4aa"/>
+    <text x="440" y="155" text-anchor="middle" fill="#e6ecff" font-size="13" font-weight="700">Pod / Shard 2</text>
+    <text x="440" y="173" text-anchor="middle" fill="#9aa3c0" font-size="11">vectors I–P</text>
+
+    <rect x="380" y="220" width="120" height="60" rx="10" fill="#1e2542" stroke="#00d4aa"/>
+    <text x="440" y="245" text-anchor="middle" fill="#e6ecff" font-size="13" font-weight="700">Pod / Shard 3</text>
+    <text x="440" y="263" text-anchor="middle" fill="#9aa3c0" font-size="11">vectors Q–Z</text>
+
+    <!-- Storage -->
+    <rect x="540" y="130" width="80" height="60" rx="10" fill="#1e2542" stroke="#ffa84a"/>
+    <text x="580" y="155" text-anchor="middle" fill="#e6ecff" font-size="12" font-weight="700">Object</text>
+    <text x="580" y="172" text-anchor="middle" fill="#e6ecff" font-size="12" font-weight="700">Storage</text>
+    <text x="580" y="186" text-anchor="middle" fill="#9aa3c0" font-size="10">(S3/GCS)</text>
+
+    <!-- arrows -->
+    <line x1="140" y1="160" x2="200" y2="160" stroke="#9aa3c0" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="320" y1="150" x2="380" y2="70"  stroke="#9aa3c0" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="320" y1="160" x2="380" y2="160" stroke="#9aa3c0" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="320" y1="170" x2="380" y2="250" stroke="#9aa3c0" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="500" y1="160" x2="540" y2="160" stroke="#9aa3c0" stroke-width="1.5" marker-end="url(#a)"/>
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#9aa3c0"/>
+      </marker>
+    </defs>
+
+    <text x="320" y="305" text-anchor="middle" fill="#9aa3c0" font-size="11">Pinecone splits ("shards") your vectors across pods so search runs in parallel.</text>
+  </svg>
+
+  <div class="analogy">
+    📚 <b>Analogy — A Library With Many Floors:</b><br/>
+    A single librarian searching one giant room is slow. Pinecone splits books across many floors (shards) and asks each floor's librarian to search <em>in parallel</em>, then merges the best answers. That's why it stays fast even with billions of vectors.
+  </div>
+</section>
+
+<!-- 4. How search happens -->
+<section>
+  <h2>4. How Searching Actually Happens</h2>
+
+  <div class="step"><div class="num">1</div><div><b>Embed your query</b> with a model (OpenAI, Cohere, sentence-transformers) into a vector.</div></div>
+  <div class="step"><div class="num">2</div><div><b>Send <code>query()</code></b> to the Pinecone API with the vector, <code>top_k</code>, optional metadata <code>filter</code>, and <code>namespace</code>.</div></div>
+  <div class="step"><div class="num">3</div><div><b>Pinecone fans out</b> the query to all shards in parallel.</div></div>
+  <div class="step"><div class="num">4</div><div><b>Each shard runs ANN search</b> (approximate nearest-neighbor) on its slice and returns its top candidates.</div></div>
+  <div class="step"><div class="num">5</div><div><b>Pinecone merges</b> all candidate lists, ranks globally, applies metadata filters, returns final <code>top_k</code>.</div></div>
+
+  <div class="analogy">
+    🍕 <b>Analogy — Ordering Pizza Across the City:</b><br/>
+    You ask: "Which pizzeria near me has the best margherita under ₹400?" An app pings every nearby pizzeria <em>at once</em>, each replies with its top match, and the app merges them into one ranked list — in seconds. That's how Pinecone handles a query across shards.
+  </div>
+</section>
+
+<!-- 5. Serverless vs Pod -->
+<section>
+  <h2>5. Two Flavors: Serverless vs Pod-Based</h2>
+  <table>
+    <tr><th>Property</th><th>Serverless (recommended)</th><th>Pod-based (legacy)</th></tr>
+    <tr><td>Pricing</td><td>Pay for storage + queries used</td><td>Pay per pod-hour, even when idle</td></tr>
+    <tr><td>Scaling</td><td>Automatic, instant</td><td>Manual (resize pods)</td></tr>
+    <tr><td>Cold starts</td><td>Possible on idle indexes</td><td>Always warm</td></tr>
+    <tr><td>Best for</td><td>Most apps, variable load</td><td>Steady high-QPS workloads</td></tr>
+  </table>
+</section>
+
+<!-- 6. Real Code -->
+<section>
+  <h2>6. Real Python Example</h2>
+<pre>from pinecone import Pinecone, ServerlessSpec
+
+# 1. Connect (get an API key from app.pinecone.io)
+pc = Pinecone(api_key="YOUR_API_KEY")
+
+# 2. Create an index (only once)
+pc.create_index(
+    name="movies",
+    dimension=1536,                    # match your embedding model
+    metric="cosine",
+    spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+)
+index = pc.Index("movies")
+
+# 3. Upsert vectors with metadata
+index.upsert(vectors=[
+    {"id": "m1",
+     "values": [0.12, -0.44, ...],
+     "metadata": {"title":"Inception","year":2010,"genre":"sci-fi"}},
+    {"id": "m2",
+     "values": [0.21, -0.31, ...],
+     "metadata": {"title":"Titanic","year":1997,"genre":"romance"}},
+])
+
+# 4. Query with a metadata filter
+res = index.query(
+    vector=[0.12, -0.44, ...],
+    top_k=5,
+    include_metadata=True,
+    filter={
+        "genre": {"$eq": "sci-fi"},
+        "year":  {"$gte": 2000}
+    }
+)
+for match in res["matches"]:
+    print(match["id"], match["score"], match["metadata"])</pre>
+
+  <div class="tip">
+    💡 Pinecone does <b>not</b> generate embeddings for you (unlike Chroma). Use OpenAI, Cohere, or <code>sentence-transformers</code> first, then upsert the resulting vectors.
+  </div>
+</section>
+
+<!-- 7. Live demo -->
+<section>
+  <h2>7. Try It! — Mini Pinecone Simulator</h2>
+  <p>A toy in-browser version mimicking Pinecone's <code>query()</code> API with metadata filters.</p>
+
+  <div class="demo">
+    <input id="q" type="text" placeholder='e.g. "dreams and reality" or "love at sea"' style="width:50%"/>
+    <select id="ns">
+      <option value="default">namespace = default</option>
+      <option value="kids">namespace = kids</option>
+    </select>
+    <select id="genre">
+      <option value="">$eq genre = any</option>
+      <option value="sci-fi">$eq genre = sci-fi</option>
+      <option value="romance">$eq genre = romance</option>
+      <option value="action">$eq genre = action</option>
+      <option value="animation">$eq genre = animation</option>
+    </select>
+    <select id="year">
+      <option value="">no year filter</option>
+      <option value="2000">$gte year = 2000</option>
+      <option value="2010">$gte year = 2010</option>
+      <option value="2020">$gte year = 2020</option>
+    </select>
+    <button onclick="runQuery()">🌲 Query</button>
+    <div id="results" class="result"></div>
+  </div>
+</section>
+
+<!-- 8. Comparison -->
+<section>
+  <h2>8. Pinecone vs Other Vector DBs</h2>
+  <table>
+    <tr><th>Feature</th><th>FAISS</th><th>Chroma</th><th>Qdrant</th><th>Pinecone</th></tr>
+    <tr><td>Type</td><td>Library</td><td>Embedded DB</td><td>Self-host / Cloud</td><td><b>Fully managed SaaS</b></td></tr>
+    <tr><td>Setup</td><td>pip install</td><td>pip install</td><td>Docker / Cloud</td><td>API key only</td></tr>
+    <tr><td>Filters</td><td>❌</td><td>Basic</td><td>✅ Advanced</td><td>✅ MongoDB-like</td></tr>
+    <tr><td>Auto-scale</td><td>❌</td><td>❌</td><td>Manual</td><td>✅ Automatic</td></tr>
+    <tr><td>Cost</td><td>Free</td><td>Free</td><td>Free / paid</td><td>Paid (free tier)</td></tr>
+    <tr><td>Best for</td><td>Research</td><td>Prototypes</td><td>Self-hosted prod</td><td>Cloud-first prod</td></tr>
+  </table>
+
+  <div class="warn">
+    ⚠️ <b>Trade-off:</b> Pinecone is the easiest to ship, but it's a <em>closed-source SaaS</em>. Your vectors live on Pinecone's servers, and you're locked into their pricing.
+  </div>
+</section>
+
+<!-- 9. Use cases -->
+<section>
+  <h2>9. Where Pinecone Shines</h2>
+  <div class="grid">
+    <div class="card"><h4>🤖 RAG for ChatGPT-style Apps</h4>The #1 use case — store your knowledge, retrieve for the LLM.</div>
+    <div class="card"><h4>🛒 Personalized Recommendations</h4>Real-time, user-specific suggestions at scale.</div>
+    <div class="card"><h4>🔍 Semantic Search</h4>Search support tickets, docs, emails by meaning.</div>
+    <div class="card"><h4>🧬 Multi-Tenant SaaS</h4>One namespace per customer — clean isolation.</div>
+    <div class="card"><h4>👀 Image / Audio Search</h4>Match by similarity, not tags.</div>
+    <div class="card"><h4>🛡️ Fraud Detection</h4>Spot anomalies far from "normal" patterns.</div>
+  </div>
+</section>
+
+<!-- 10. Recap -->
+<section>
+  <h2>10. One-Line Recap</h2>
+  <p style="font-size:1.15rem;text-align:center;color:var(--accent)">
+    <b>Pinecone = vector search as a service — you provide vectors and questions, Pinecone provides scale, speed, and zero maintenance.</b>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Built for classroom use • Open this file in any browser • No internet required
+</footer>
+
+<script>
+  // Mini Pinecone simulator
+  const vectors = [
+    // namespace "default"
+    { id:"m1",  ns:"default", title:"Inception",          year:2010, genre:"sci-fi",    text:"sci-fi mind dreams within dreams reality" },
+    { id:"m2",  ns:"default", title:"Interstellar",       year:2014, genre:"sci-fi",    text:"sci-fi space wormhole black hole love time" },
+    { id:"m3",  ns:"default", title:"The Matrix",         year:1999, genre:"sci-fi",    text:"sci-fi simulated reality hacker chosen one" },
+    { id:"m4",  ns:"default", title:"Dune",               year:2021, genre:"sci-fi",    text:"sci-fi desert planet spice prophecy chosen" },
+    { id:"m5",  ns:"default", title:"Titanic",            year:1997, genre:"romance",   text:"romance ship sinking love sea ocean tragic" },
+    { id:"m6",  ns:"default", title:"La La Land",         year:2016, genre:"romance",   text:"romance jazz musician dreams los angeles" },
+    { id:"m7",  ns:"default", title:"The Notebook",       year:2004, genre:"romance",   text:"romance lovers letters memory rain" },
+    { id:"m8",  ns:"default", title:"John Wick",          year:2014, genre:"action",    text:"action assassin guns revenge dog" },
+    { id:"m9",  ns:"default", title:"Mad Max",            year:2015, genre:"action",    text:"action desert chase cars apocalypse" },
+    { id:"m10", ns:"default", title:"Avengers Endgame",   year:2019, genre:"action",    text:"action superheroes time travel save universe" },
+    // namespace "kids"
+    { id:"k1",  ns:"kids",    title:"Toy Story",          year:1995, genre:"animation", text:"animation toys friendship cowboy spaceman" },
+    { id:"k2",  ns:"kids",    title:"Finding Nemo",       year:2003, genre:"animation", text:"animation fish ocean father son journey" },
+    { id:"k3",  ns:"kids",    title:"Frozen",             year:2013, genre:"animation", text:"animation sisters ice queen snow love" },
+  ];
+
+  const synonyms = {
+    dream:["dreams","sleep","mind","sci-fi"],
+    space:["cosmos","galaxy","planet","universe","stars"],
+    sea:["ocean","ship","boat","sinking","titanic"],
+    love:["romance","romantic","lovers","heart"],
+    fight:["action","guns","battle"],
+    hero:["superhero","superheroes","action"],
+    fish:["nemo","ocean","sea"],
+    toy:["toys","cowboy","spaceman"],
+  };
+
+  function tokens(s){
+    return s.toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean);
+  }
+  function expand(toks){
+    const out = new Set(toks);
+    toks.forEach(t => (synonyms[t]||[]).forEach(s => out.add(s)));
+    return [...out];
+  }
+  function score(query, doc){
+    const q = expand(tokens(query));
+    const d = tokens(doc);
+    let hits = 0;
+    q.forEach(w => { if (d.includes(w)) hits++; });
+    // Pinecone returns a similarity score (higher = better) for cosine
+    return hits === 0 ? 0 : Math.min(0.99, hits / Math.max(q.length, 1));
+  }
+
+  function runQuery(){
+    const q  = document.getElementById('q').value.trim();
+    const ns = document.getElementById('ns').value;
+    const g  = document.getElementById('genre').value;
+    const y  = parseInt(document.getElementById('year').value || "0", 10);
+    const out = document.getElementById('results');
+    out.innerHTML = "";
+    if (!q){ out.innerHTML = '<div class="meta">Enter a query above and press Query.</div>'; return; }
+
+    let pool = vectors.filter(v => v.ns === ns);
+    if (g) pool = pool.filter(v => v.genre === g);
+    if (y) pool = pool.filter(v => v.year >= y);
+
+    const ranked = pool
+      .map(v => ({...v, sim: score(q, v.text + " " + v.title)}))
+      .sort((a,b) => b.sim - a.sim)
+      .slice(0, 5);
+
+    const filterDesc = [
+      `namespace=${ns}`,
+      g && `$eq genre=${g}`,
+      y && `$gte year=${y}`
+    ].filter(Boolean).join(" • ");
+
+    out.innerHTML =
+      `<div class="meta">🌲 query → fanned out across shards • filters [${filterDesc}] • ${pool.length} candidates → top 5:</div>` +
+      (ranked.length === 0
+        ? '<div class="item">No matches. Try a different namespace or remove a filter.</div>'
+        : ranked.map(r => `
+          <div class="item">
+            <span class="score">score ${r.sim.toFixed(2)}</span>
+            <b>${r.id} — ${r.title}</b>
+            <span class="badge">${r.genre}</span>
+            <span class="badge">${r.year}</span><br/>
+            <span class="meta">${r.text}</span>
+          </div>`).join(""));
+  }
+
+  document.getElementById('q').value = "dreams and reality";
+  runQuery();
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') runQuery(); });
+</script>
+
+</body>
+</html>

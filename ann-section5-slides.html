@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ANN · Section 5 — Quantization Methods</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+    --soft:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px}
+  .slide{
+    width:1280px;height:720px;background:var(--panel);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:48px 56px;display:grid;grid-template-rows:auto 1fr auto;
+    page-break-after:always;position:relative;overflow:hidden;
+  }
+  .slide::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,#7c3aed,#c026d3);
+  }
+  .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#7c3aed;font-weight:700}
+  h1{font-size:38px;margin:6px 0 4px;line-height:1.1;letter-spacing:-.01em}
+  h2{font-size:24px;margin:0;color:var(--muted);font-weight:500}
+  .body{display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center;margin-top:14px}
+  .text p{font-size:17px;line-height:1.55;color:#1f2937;margin:0 0 12px}
+  .text ul{margin:0;padding-left:20px}
+  .text li{font-size:16px;line-height:1.5;margin:6px 0;color:#1f2937}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px}
+  .panel{background:var(--soft);border-radius:14px;padding:14px;height:100%;display:flex;align-items:center;justify-content:center}
+  .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+  .stepgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .step{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12px;color:#334155}
+  .step b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed}
+  text{font-family:Inter,system-ui,sans-serif}
+  @media print{ body{background:#fff} .deck{gap:0;padding:0} .slide{box-shadow:none;border-radius:0;width:100vw;height:100vh}}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ============== SLIDE 1: Product Quantization ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 5 · Quantization · Slide 1 of 4</div>
+    <h1>Product Quantization (PQ)</h1>
+    <h2>Split each vector into chunks, replace each chunk with a centroid ID. ~384× memory savings.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> Don't store the full vector — store a <b>code</b> of which centroid each sub-vector is closest to.</p>
+      <div class="stepgrid">
+        <div class="step"><b>Split</b>768-d → 8 sub-vectors of 96-d</div>
+        <div class="step"><b>Cluster</b>k-means on each sub-space (256 centroids)</div>
+        <div class="step"><b>Encode</b>store nearest centroid ID (1 byte each)</div>
+        <div class="step"><b>Distance</b>lookup table + sum</div>
+      </div>
+      <p style="margin-top:12px;color:var(--muted)"><b>Compression:</b> 768 floats (3072 B) → 8 bytes. <b>~384× smaller.</b></p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+
+        <!-- original vector -->
+        <text x="310" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Original vector v ∈ ℝ⁷⁶⁸</text>
+        <g transform="translate(40,50)">
+          <rect width="540" height="36" rx="6" fill="#ede9fe" stroke="#7c3aed"/>
+          <!-- 8 chunks -->
+          <g stroke="#7c3aed" stroke-width="1.4">
+            <line x1="67.5" y1="0" x2="67.5" y2="36"/>
+            <line x1="135" y1="0" x2="135" y2="36"/>
+            <line x1="202.5" y1="0" x2="202.5" y2="36"/>
+            <line x1="270" y1="0" x2="270" y2="36"/>
+            <line x1="337.5" y1="0" x2="337.5" y2="36"/>
+            <line x1="405" y1="0" x2="405" y2="36"/>
+            <line x1="472.5" y1="0" x2="472.5" y2="36"/>
+          </g>
+          <g font-size="10" fill="#5b21b6" text-anchor="middle">
+            <text x="33.75" y="22">sub₁</text>
+            <text x="101.25" y="22">sub₂</text>
+            <text x="168.75" y="22">sub₃</text>
+            <text x="236.25" y="22">sub₄</text>
+            <text x="303.75" y="22">sub₅</text>
+            <text x="371.25" y="22">sub₆</text>
+            <text x="438.75" y="22">sub₇</text>
+            <text x="506.25" y="22">sub₈</text>
+          </g>
+        </g>
+
+        <!-- arrows down -->
+        <g stroke="#7c3aed" stroke-width="1.5">
+          <line x1="73" y1="92" x2="73" y2="120" marker-end="url(#dn)"/>
+          <line x1="140" y1="92" x2="140" y2="120" marker-end="url(#dn)"/>
+          <line x1="207" y1="92" x2="207" y2="120" marker-end="url(#dn)"/>
+          <line x1="274" y1="92" x2="274" y2="120" marker-end="url(#dn)"/>
+          <line x1="341" y1="92" x2="341" y2="120" marker-end="url(#dn)"/>
+          <line x1="408" y1="92" x2="408" y2="120" marker-end="url(#dn)"/>
+          <line x1="475" y1="92" x2="475" y2="120" marker-end="url(#dn)"/>
+          <line x1="542" y1="92" x2="542" y2="120" marker-end="url(#dn)"/>
+        </g>
+        <defs>
+          <marker id="dn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/></marker>
+        </defs>
+
+        <!-- Codebooks (mini scatter for each subspace) -->
+        <text x="310" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6">Codebooks · k-means in each sub-space (256 centroids)</text>
+        <g transform="translate(40,150)">
+          <g>
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="14" cy="14" r="2"/><circle cx="22" cy="40" r="2"/><circle cx="38" cy="22" r="2"/><circle cx="46" cy="48" r="2"/><circle cx="30" cy="32" r="2"/></g>
+            <circle cx="38" cy="22" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=42</text>
+          </g>
+          <g transform="translate(67.5,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="18" cy="20" r="2"/><circle cx="40" cy="14" r="2"/><circle cx="50" cy="42" r="2"/><circle cx="22" cy="46" r="2"/></g>
+            <circle cx="22" cy="46" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=17</text>
+          </g>
+          <g transform="translate(135,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="14" cy="40" r="2"/><circle cx="46" cy="22" r="2"/><circle cx="30" cy="48" r="2"/></g>
+            <circle cx="46" cy="22" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=200</text>
+          </g>
+          <g transform="translate(202.5,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="22" cy="22" r="2"/><circle cx="44" cy="40" r="2"/><circle cx="14" cy="50" r="2"/></g>
+            <circle cx="22" cy="22" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=5</text>
+          </g>
+          <g transform="translate(270,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="30" cy="14" r="2"/><circle cx="50" cy="44" r="2"/><circle cx="18" cy="44" r="2"/></g>
+            <circle cx="50" cy="44" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=88</text>
+          </g>
+          <g transform="translate(337.5,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="20" cy="38" r="2"/><circle cx="44" cy="20" r="2"/><circle cx="36" cy="50" r="2"/></g>
+            <circle cx="20" cy="38" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=11</text>
+          </g>
+          <g transform="translate(405,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="14" cy="22" r="2"/><circle cx="46" cy="46" r="2"/><circle cx="30" cy="14" r="2"/></g>
+            <circle cx="46" cy="46" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=176</text>
+          </g>
+          <g transform="translate(472.5,0)">
+            <rect width="64" height="64" rx="6" fill="#faf5ff" stroke="#a78bfa"/>
+            <g fill="#0f172a"><circle cx="22" cy="20" r="2"/><circle cx="40" cy="44" r="2"/><circle cx="14" cy="48" r="2"/></g>
+            <circle cx="40" cy="44" r="4" fill="#dc2626"/>
+            <text x="32" y="78" font-size="9" text-anchor="middle" fill="#7c3aed">id=63</text>
+          </g>
+        </g>
+
+        <!-- arrows down -->
+        <g stroke="#7c3aed" stroke-width="1.5">
+          <line x1="73" y1="248" x2="73" y2="278" marker-end="url(#dn)"/>
+          <line x1="140" y1="248" x2="140" y2="278" marker-end="url(#dn)"/>
+          <line x1="207" y1="248" x2="207" y2="278" marker-end="url(#dn)"/>
+          <line x1="274" y1="248" x2="274" y2="278" marker-end="url(#dn)"/>
+          <line x1="341" y1="248" x2="341" y2="278" marker-end="url(#dn)"/>
+          <line x1="408" y1="248" x2="408" y2="278" marker-end="url(#dn)"/>
+          <line x1="475" y1="248" x2="475" y2="278" marker-end="url(#dn)"/>
+          <line x1="542" y1="248" x2="542" y2="278" marker-end="url(#dn)"/>
+        </g>
+
+        <!-- PQ code -->
+        <text x="310" y="296" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">PQ code (8 bytes)</text>
+        <g transform="translate(40,308)">
+          <g font-family="monospace" font-size="13" font-weight="700" text-anchor="middle">
+            <rect width="540" height="36" rx="6" fill="#dcfce7" stroke="#15803d"/>
+            <g stroke="#15803d" stroke-width="1.4">
+              <line x1="67.5" y1="0" x2="67.5" y2="36"/>
+              <line x1="135" y1="0" x2="135" y2="36"/>
+              <line x1="202.5" y1="0" x2="202.5" y2="36"/>
+              <line x1="270" y1="0" x2="270" y2="36"/>
+              <line x1="337.5" y1="0" x2="337.5" y2="36"/>
+              <line x1="405" y1="0" x2="405" y2="36"/>
+              <line x1="472.5" y1="0" x2="472.5" y2="36"/>
+            </g>
+            <g fill="#065f46">
+              <text x="33.75" y="23">42</text>
+              <text x="101.25" y="23">17</text>
+              <text x="168.75" y="23">200</text>
+              <text x="236.25" y="23">5</text>
+              <text x="303.75" y="23">88</text>
+              <text x="371.25" y="23">11</text>
+              <text x="438.75" y="23">176</text>
+              <text x="506.25" y="23">63</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- savings callout -->
+        <g transform="translate(40,358)">
+          <rect width="540" height="38" rx="8" fill="#0f172a"/>
+          <text x="270" y="24" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="700">
+            3072 bytes  →  8 bytes   ·   384× compression   ·   distance via lookup table
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Quantization Methods</span><span>1 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 2: IVF ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 5 · Quantization · Slide 2 of 4</div>
+    <h1>IVF — Inverted File Index</h1>
+    <h2>Cluster all vectors into K cells. At query time, search only the closest <code>nprobe</code> cells.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Intuition</span> Skip 99% of the dataset by only scanning the few cells nearest to Q.</p>
+      <div class="stepgrid">
+        <div class="step"><b>Build</b>k-means on dataset → K centroids</div>
+        <div class="step"><b>Assign</b>each vector → its nearest centroid</div>
+        <div class="step"><b>Probe</b>find nprobe closest cells to Q</div>
+        <div class="step"><b>Scan</b>only those cells' inverted lists</div>
+      </div>
+      <p style="margin-top:12px;color:var(--muted)"><b>Trade-off:</b> higher <code>nprobe</code> → higher recall but slower. Typical: K=4096, nprobe=8–32.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <!-- LEFT: voronoi cells -->
+        <g transform="translate(15,20)">
+          <rect width="320" height="380" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="160" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Voronoi cells (K = 6)</text>
+
+          <rect x="20" y="40" width="280" height="320" fill="#faf5ff" stroke="#a78bfa"/>
+          <!-- voronoi-ish boundary lines -->
+          <g stroke="#7c3aed" stroke-width="1.4">
+            <line x1="120" y1="40" x2="100" y2="200"/>
+            <line x1="100" y1="200" x2="160" y2="360"/>
+            <line x1="220" y1="40" x2="240" y2="200"/>
+            <line x1="240" y1="200" x2="200" y2="360"/>
+            <line x1="100" y1="200" x2="240" y2="200"/>
+          </g>
+
+          <!-- centroids -->
+          <g>
+            <circle cx="60"  cy="100" r="8" fill="#7c3aed"/><text x="60"  y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">C₁</text>
+            <circle cx="160" cy="110" r="8" fill="#7c3aed"/><text x="160" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">C₂</text>
+            <circle cx="260" cy="110" r="8" fill="#dc2626"/><text x="260" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">C₃ ✓</text>
+            <circle cx="60"  cy="290" r="8" fill="#7c3aed"/><text x="60"  y="320" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">C₄</text>
+            <circle cx="170" cy="290" r="8" fill="#dc2626"/><text x="170" y="320" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">C₅ ✓</text>
+            <circle cx="270" cy="290" r="8" fill="#7c3aed"/><text x="270" y="320" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">C₆</text>
+          </g>
+
+          <!-- data points -->
+          <g fill="#0f172a">
+            <circle cx="40" cy="80" r="3"/><circle cx="55" cy="115" r="3"/><circle cx="75" cy="100" r="3"/><circle cx="60" cy="135" r="3"/>
+            <circle cx="140" cy="100" r="3"/><circle cx="170" cy="125" r="3"/><circle cx="155" cy="135" r="3"/>
+            <circle cx="245" cy="95" r="3"/><circle cx="275" cy="120" r="3"/><circle cx="260" cy="145" r="3"/>
+            <circle cx="50" cy="280" r="3"/><circle cx="70" cy="295" r="3"/><circle cx="55" cy="310" r="3"/>
+            <circle cx="155" cy="280" r="3"/><circle cx="180" cy="295" r="3"/><circle cx="170" cy="310" r="3"/>
+            <circle cx="255" cy="280" r="3"/><circle cx="280" cy="300" r="3"/>
+          </g>
+
+          <!-- highlight chosen cells C3 + C5 -->
+          <rect x="220" y="40" width="80" height="160" fill="#fee2e2" fill-opacity=".4"/>
+          <rect x="100" y="200" width="140" height="160" fill="#fee2e2" fill-opacity=".4"/>
+
+          <!-- query -->
+          <circle cx="240" cy="170" r="9" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+          <text x="252" y="170" font-size="12" font-weight="700" fill="#7f1d1d">Q</text>
+        </g>
+
+        <!-- RIGHT: inverted lists -->
+        <g transform="translate(355,20)">
+          <rect width="250" height="380" rx="12" fill="#fff" stroke="#cbd5e1"/>
+          <text x="125" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Inverted lists</text>
+
+          <g font-size="11">
+            <rect x="15" y="40" width="220" height="34" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="28" y="61" font-weight="700" fill="#334155">C₁:</text>
+            <text x="55" y="61" fill="#475569" font-family="monospace">v₁₂, v₃₄, v₅₅, v₈₈, ...</text>
+
+            <rect x="15" y="80" width="220" height="34" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="28" y="101" font-weight="700" fill="#334155">C₂:</text>
+            <text x="55" y="101" fill="#475569" font-family="monospace">v₃, v₂₁, v₄₂, v₆₇, ...</text>
+
+            <rect x="15" y="120" width="220" height="34" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+            <text x="28" y="141" font-weight="700" fill="#7f1d1d">C₃: ✓</text>
+            <text x="68" y="141" fill="#7f1d1d" font-family="monospace">v₈, v₃₃, v₇₇, v₁₀₂, ...</text>
+
+            <rect x="15" y="160" width="220" height="34" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="28" y="181" font-weight="700" fill="#334155">C₄:</text>
+            <text x="55" y="181" fill="#475569" font-family="monospace">v₆, v₁₅, v₂₈, ...</text>
+
+            <rect x="15" y="200" width="220" height="34" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+            <text x="28" y="221" font-weight="700" fill="#7f1d1d">C₅: ✓</text>
+            <text x="68" y="221" fill="#7f1d1d" font-family="monospace">v₂, v₁₈, v₅₁, v₉₉, ...</text>
+
+            <rect x="15" y="240" width="220" height="34" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <text x="28" y="261" font-weight="700" fill="#334155">C₆:</text>
+            <text x="55" y="261" fill="#475569" font-family="monospace">v₇, v₂₃, v₆₅, ...</text>
+
+            <rect x="15" y="290" width="220" height="76" rx="8" fill="#0f172a"/>
+            <text x="125" y="312" text-anchor="middle" fill="#f8fafc" font-weight="700" font-size="12">nprobe = 2</text>
+            <text x="125" y="332" text-anchor="middle" fill="#93c5fd" font-size="11">scan only C₃ and C₅</text>
+            <text x="125" y="352" text-anchor="middle" fill="#a7f3d0" font-size="11">(skip 67% of vectors)</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Quantization Methods</span><span>2 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 3: IVF + PQ ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 5 · Quantization · Slide 3 of 4</div>
+    <h1>IVF + PQ — The Workhorse</h1>
+    <h2>IVF finds the right region. PQ compresses what's inside. Together they handle billions.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Why combine</span> IVF alone still stores full vectors → too much RAM. PQ alone scans everything → too slow. Combined → fast <i>and</i> tiny.</p>
+      <ul>
+        <li><b>Stage 1:</b> coarse search → top <code>nprobe</code> cells</li>
+        <li><b>Stage 2:</b> score PQ codes inside those cells via lookup tables</li>
+        <li><b>Stage 3 (optional):</b> re-rank top 100 with full float vectors</li>
+      </ul>
+      <p style="margin-top:12px;color:var(--muted)"><b>Why FAISS uses it:</b> 1B × 768 floats = 3 TB → 1B × 8 PQ bytes = 8 GB. Fits on one machine.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Two-stage pipeline</text>
+
+        <!-- Stage 1: IVF cells with query -->
+        <g transform="translate(30,55)">
+          <rect width="270" height="180" rx="10" fill="#faf5ff" stroke="#a78bfa"/>
+          <text x="135" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6">Stage 1 · IVF coarse search</text>
+          <!-- mini grid of cells -->
+          <g>
+            <rect x="20" y="40" width="60" height="50" fill="#fff" stroke="#a78bfa"/>
+            <rect x="80" y="40" width="60" height="50" fill="#fff" stroke="#a78bfa"/>
+            <rect x="140" y="40" width="60" height="50" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+            <rect x="200" y="40" width="50" height="50" fill="#fff" stroke="#a78bfa"/>
+            <rect x="20" y="90" width="60" height="50" fill="#fff" stroke="#a78bfa"/>
+            <rect x="80" y="90" width="60" height="50" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+            <rect x="140" y="90" width="60" height="50" fill="#fff" stroke="#a78bfa"/>
+            <rect x="200" y="90" width="50" height="50" fill="#fff" stroke="#a78bfa"/>
+          </g>
+          <g fill="#7c3aed">
+            <circle cx="50" cy="65" r="3"/><circle cx="110" cy="65" r="3"/><circle cx="170" cy="65" r="3"/><circle cx="225" cy="65" r="3"/>
+            <circle cx="50" cy="115" r="3"/><circle cx="110" cy="115" r="3"/><circle cx="170" cy="115" r="3"/><circle cx="225" cy="115" r="3"/>
+          </g>
+          <circle cx="155" cy="95" r="7" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+          <text x="135" y="160" text-anchor="middle" font-size="11" fill="#7f1d1d" font-weight="700">→ 2 cells selected (nprobe = 2)</text>
+        </g>
+
+        <!-- arrow -->
+        <line x1="310" y1="145" x2="345" y2="145" stroke="#0f172a" stroke-width="2.5" marker-end="url(#aR2)"/>
+        <defs>
+          <marker id="aR2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/></marker>
+        </defs>
+
+        <!-- Stage 2: PQ codes -->
+        <g transform="translate(355,55)">
+          <rect width="240" height="180" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+          <text x="120" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">Stage 2 · PQ scoring inside cells</text>
+
+          <!-- list of PQ codes -->
+          <g font-family="monospace" font-size="11">
+            <rect x="15" y="35" width="210" height="22" rx="4" fill="#fff" stroke="#10b981"/>
+            <text x="22" y="50" fill="#065f46">v₈   42 17 200 5 88 11 176 63</text>
+            <rect x="15" y="60" width="210" height="22" rx="4" fill="#fff" stroke="#10b981"/>
+            <text x="22" y="75" fill="#065f46">v₃₃  12 99  14 8 91 22 130 70</text>
+            <rect x="15" y="85" width="210" height="22" rx="4" fill="#dcfce7" stroke="#15803d" stroke-width="1.5"/>
+            <text x="22" y="100" fill="#065f46" font-weight="700">v₇₇  44 19 198 6 90 10 174 65 ★</text>
+            <rect x="15" y="110" width="210" height="22" rx="4" fill="#fff" stroke="#10b981"/>
+            <text x="22" y="125" fill="#065f46">v₁₀₂ 71 52  18 22 4 88 103 19</text>
+            <rect x="15" y="135" width="210" height="22" rx="4" fill="#fff" stroke="#10b981"/>
+            <text x="22" y="150" fill="#065f46">v₅₁  43 18 199 4 87 12 175 62</text>
+          </g>
+          <text x="120" y="172" text-anchor="middle" font-size="10" fill="#065f46">distances via lookup table sums</text>
+        </g>
+
+        <!-- Stage 3: re-rank -->
+        <g transform="translate(30,255)">
+          <rect width="565" height="100" rx="10" fill="#fefce8" stroke="#eab308"/>
+          <text x="282" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#a16207">Stage 3 · Re-rank top 100 with full vectors (optional, boosts recall)</text>
+
+          <g transform="translate(40,40)">
+            <rect width="100" height="44" rx="8" fill="#fff" stroke="#ca8a04"/>
+            <text x="50" y="20" text-anchor="middle" font-size="11" fill="#78350f" font-weight="700">Top-100</text>
+            <text x="50" y="36" text-anchor="middle" font-size="10" fill="#78350f">PQ candidates</text>
+          </g>
+          <line x1="145" y1="62" x2="195" y2="62" stroke="#0f172a" stroke-width="2" marker-end="url(#aR2)"/>
+          <g transform="translate(200,40)">
+            <rect width="160" height="44" rx="8" fill="#fff" stroke="#ca8a04"/>
+            <text x="80" y="20" text-anchor="middle" font-size="11" fill="#78350f" font-weight="700">exact distance</text>
+            <text x="80" y="36" text-anchor="middle" font-size="10" fill="#78350f">on full float vectors</text>
+          </g>
+          <line x1="365" y1="62" x2="415" y2="62" stroke="#0f172a" stroke-width="2" marker-end="url(#aR2)"/>
+          <g transform="translate(420,40)">
+            <rect width="100" height="44" rx="8" fill="#dcfce7" stroke="#15803d"/>
+            <text x="50" y="20" text-anchor="middle" font-size="11" fill="#065f46" font-weight="700">Top-K</text>
+            <text x="50" y="36" text-anchor="middle" font-size="10" fill="#065f46">final result</text>
+          </g>
+        </g>
+
+        <!-- bottom callout -->
+        <g transform="translate(30,370)">
+          <rect width="565" height="32" rx="8" fill="#0f172a"/>
+          <text x="282" y="20" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="700">
+            1B vectors · ~8 GB RAM · &lt;10 ms latency · 95%+ recall with re-ranking
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Quantization Methods</span><span>3 / 4</span></div>
+</section>
+
+<!-- ============== SLIDE 4: ScaNN ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 5 · Quantization · Slide 4 of 4</div>
+    <h1>ScaNN — Anisotropic Quantization</h1>
+    <h2>Google's twist: minimize quantization error in the direction that actually matters for inner-product.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Insight</span> Standard PQ minimizes <i>L2 reconstruction error</i> — but search uses <i>inner products</i>. Errors orthogonal to the query direction are harmless.</p>
+      <ul>
+        <li><b>Standard PQ:</b> uniform error ball around each centroid</li>
+        <li><b>ScaNN:</b> elongated error — squeezed along the query direction, looser elsewhere</li>
+        <li>Result: <b>~2× recall</b> at the same latency for cosine / IP search</li>
+      </ul>
+      <p style="margin-top:12px;color:var(--muted)"><b>Use when:</b> very large corpora with cosine / inner-product (most embedding models).</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Quantization error shape</text>
+
+        <!-- LEFT: standard PQ -->
+        <g transform="translate(40,60)">
+          <rect width="260" height="320" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>
+          <text x="130" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">Standard PQ</text>
+          <text x="130" y="42" text-anchor="middle" font-size="11" fill="#475569">isotropic (round) error</text>
+
+          <!-- query direction -->
+          <line x1="40" y1="280" x2="220" y2="100" stroke="#dc2626" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#qa)"/>
+          <defs>
+            <marker id="qa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
+          </defs>
+          <text x="200" y="92" font-size="11" font-weight="700" fill="#dc2626">query dir</text>
+
+          <!-- centroid + isotropic ball -->
+          <circle cx="130" cy="190" r="50" fill="#dbeafe" fill-opacity=".55" stroke="#2563eb" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <circle cx="130" cy="190" r="6" fill="#1e3a8a"/>
+          <text x="138" y="188" font-size="11" fill="#1e3a8a" font-weight="700">centroid</text>
+
+          <!-- random points -->
+          <g fill="#0f172a">
+            <circle cx="115" cy="178" r="2.5"/><circle cx="142" cy="180" r="2.5"/>
+            <circle cx="120" cy="200" r="2.5"/><circle cx="148" cy="205" r="2.5"/>
+            <circle cx="130" cy="170" r="2.5"/><circle cx="100" cy="195" r="2.5"/>
+            <circle cx="160" cy="190" r="2.5"/>
+          </g>
+          <text x="130" y="305" text-anchor="middle" font-size="11" fill="#475569" font-style="italic">error wastes effort along query direction</text>
+        </g>
+
+        <!-- RIGHT: ScaNN -->
+        <g transform="translate(320,60)">
+          <rect width="260" height="320" rx="12" fill="#fef3c7" stroke="#f59e0b"/>
+          <text x="130" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#78350f">ScaNN · Anisotropic</text>
+          <text x="130" y="42" text-anchor="middle" font-size="11" fill="#92400e">elongated · less error along query</text>
+
+          <line x1="40" y1="280" x2="220" y2="100" stroke="#dc2626" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#qa)"/>
+          <text x="200" y="92" font-size="11" font-weight="700" fill="#dc2626">query dir</text>
+
+          <!-- elongated ellipse aligned with orthogonal axis (compressed along query dir) -->
+          <ellipse cx="130" cy="190" rx="20" ry="60" transform="rotate(-45 130 190)"
+                   fill="#fed7aa" fill-opacity=".7" stroke="#ea580c" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <circle cx="130" cy="190" r="6" fill="#7c2d12"/>
+          <text x="138" y="188" font-size="11" fill="#7c2d12" font-weight="700">centroid</text>
+
+          <g fill="#0f172a">
+            <circle cx="125" cy="185" r="2.5"/><circle cx="135" cy="195" r="2.5"/>
+            <circle cx="115" cy="170" r="2.5"/><circle cx="145" cy="210" r="2.5"/>
+            <circle cx="105" cy="160" r="2.5"/><circle cx="155" cy="220" r="2.5"/>
+            <circle cx="100" cy="155" r="2.5"/>
+          </g>
+          <text x="130" y="305" text-anchor="middle" font-size="11" fill="#7c2d12" font-weight="700">tighter where it matters</text>
+          <text x="130" y="320" text-anchor="middle" font-size="10" fill="#7c2d12">⇒ better inner-product approximation</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Quantization Methods</span><span>4 / 4</span></div>
+</section>
+
+</div>
+</body>
+</html>

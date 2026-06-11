@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ANN · Section 7 — Systems, Comparison & Cheat Sheet</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+    --soft:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px}
+  .slide{
+    width:1280px;height:720px;background:var(--panel);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:48px 56px;display:grid;grid-template-rows:auto 1fr auto;
+    page-break-after:always;position:relative;overflow:hidden;
+  }
+  .slide::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,#0f172a,#475569);
+  }
+  .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#0f172a;font-weight:700}
+  h1{font-size:38px;margin:6px 0 4px;line-height:1.1;letter-spacing:-.01em}
+  h2{font-size:24px;margin:0;color:var(--muted);font-weight:500}
+  .body{display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center;margin-top:14px}
+  .text p{font-size:17px;line-height:1.55;color:#1f2937;margin:0 0 12px}
+  .text ul{margin:0;padding-left:20px}
+  .text li{font-size:16px;line-height:1.5;margin:6px 0;color:#1f2937}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px}
+  .panel{background:var(--soft);border-radius:14px;padding:14px;height:100%;display:flex;align-items:center;justify-content:center}
+  .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+  .pill.good{background:#dcfce7;color:#065f46}
+  .pill.bad{background:#fee2e2;color:#991b1b}
+  .pill.mid{background:#fef3c7;color:#92400e}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left}
+  th{background:#0f172a;color:#f8fafc;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  tr:nth-child(even) td{background:#f8fafc}
+  text{font-family:Inter,system-ui,sans-serif}
+  @media print{ body{background:#fff} .deck{gap:0;padding:0} .slide{box-shadow:none;border-radius:0;width:100vw;height:100vh}}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ============== SLIDE 1: Systems ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 7 · Systems · Slide 1 of 3</div>
+    <h1>FAISS · Annoy · Vector DBs</h1>
+    <h2>From in-process libraries to managed cloud — pick the layer of abstraction you need.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">FAISS</span> Library by Meta · C++/Python · in-process · max performance · GPU support · you build the ops.</p>
+      <p><span class="badge">Annoy</span> Spotify's forest of random projection trees · static index · mmap fast loads · read-only after build.</p>
+      <p><span class="badge">Vector DBs</span> <b>Pinecone, Weaviate, Qdrant, Milvus, pgvector</b> — full services with sharding, replication, RBAC, hybrid search (BM25 + ANN), filtering, multi-tenancy.</p>
+      <p style="margin-top:8px;color:var(--muted)"><b>Default in 2026:</b> a vector DB for production, FAISS for embedded/research.</p>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Vector DB architecture</text>
+
+        <!-- Ingest -->
+        <g transform="translate(30,60)">
+          <rect width="100" height="70" rx="10" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="50" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Ingest API</text>
+          <text x="50" y="48" text-anchor="middle" font-size="10" fill="#1e3a8a">REST / gRPC</text>
+          <text x="50" y="62" text-anchor="middle" font-size="10" fill="#1e3a8a">batch / stream</text>
+        </g>
+
+        <line x1="135" y1="95" x2="170" y2="95" stroke="#0f172a" stroke-width="2" marker-end="url(#a)"/>
+        <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/></marker></defs>
+
+        <!-- Indexer -->
+        <g transform="translate(175,60)">
+          <rect width="110" height="70" rx="10" fill="#ede9fe" stroke="#7c3aed"/>
+          <text x="55" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6">Indexer</text>
+          <text x="55" y="48" text-anchor="middle" font-size="10" fill="#5b21b6">HNSW / IVF+PQ</text>
+          <text x="55" y="62" text-anchor="middle" font-size="10" fill="#5b21b6">+ updates</text>
+        </g>
+
+        <line x1="290" y1="95" x2="325" y2="95" stroke="#0f172a" stroke-width="2" marker-end="url(#a)"/>
+
+        <!-- Storage -->
+        <g transform="translate(330,60)">
+          <rect width="120" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+          <text x="60" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">Storage</text>
+          <text x="60" y="48" text-anchor="middle" font-size="10" fill="#78350f">vectors + metadata</text>
+          <text x="60" y="62" text-anchor="middle" font-size="10" fill="#78350f">shards · replicas</text>
+        </g>
+
+        <!-- Query Engine row -->
+        <g transform="translate(175,165)">
+          <rect width="350" height="80" rx="12" fill="#dcfce7" stroke="#15803d"/>
+          <text x="175" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Query Engine</text>
+          <g font-size="11" fill="#065f46">
+            <rect x="20" y="40" width="90" height="28" rx="6" fill="#fff" stroke="#15803d"/>
+            <text x="65" y="58" text-anchor="middle" font-weight="700">filter</text>
+            <rect x="120" y="40" width="90" height="28" rx="6" fill="#fff" stroke="#15803d"/>
+            <text x="165" y="58" text-anchor="middle" font-weight="700">ANN search</text>
+            <rect x="220" y="40" width="110" height="28" rx="6" fill="#fff" stroke="#15803d"/>
+            <text x="275" y="58" text-anchor="middle" font-weight="700">re-rank · BM25</text>
+          </g>
+        </g>
+
+        <!-- arrows from storage to query engine -->
+        <line x1="390" y1="135" x2="350" y2="165" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+        <!-- Client -->
+        <g transform="translate(465,60)">
+          <rect width="120" height="70" rx="10" fill="#fee2e2" stroke="#dc2626"/>
+          <text x="60" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Client</text>
+          <text x="60" y="48" text-anchor="middle" font-size="10" fill="#7f1d1d">REST / gRPC</text>
+          <text x="60" y="62" text-anchor="middle" font-size="10" fill="#7f1d1d">SDKs</text>
+        </g>
+
+        <line x1="465" y1="115" x2="525" y2="155" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="180" y1="190" x2="135" y2="120" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+        <!-- system comparison strip -->
+        <g transform="translate(30,275)">
+          <rect width="555" height="115" rx="12" fill="#0f172a"/>
+          <text x="277" y="22" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="700">System landscape</text>
+          <g font-size="11">
+            <g transform="translate(20,40)">
+              <rect width="100" height="60" rx="8" fill="#1e293b" stroke="#475569"/>
+              <text x="50" y="20" text-anchor="middle" fill="#93c5fd" font-weight="700">Pinecone</text>
+              <text x="50" y="38" text-anchor="middle" fill="#cbd5e1" font-size="10">managed cloud</text>
+              <text x="50" y="52" text-anchor="middle" fill="#cbd5e1" font-size="10">simple API</text>
+            </g>
+            <g transform="translate(130,40)">
+              <rect width="100" height="60" rx="8" fill="#1e293b" stroke="#475569"/>
+              <text x="50" y="20" text-anchor="middle" fill="#93c5fd" font-weight="700">Weaviate</text>
+              <text x="50" y="38" text-anchor="middle" fill="#cbd5e1" font-size="10">hybrid + GraphQL</text>
+              <text x="50" y="52" text-anchor="middle" fill="#cbd5e1" font-size="10">modules</text>
+            </g>
+            <g transform="translate(240,40)">
+              <rect width="100" height="60" rx="8" fill="#1e293b" stroke="#475569"/>
+              <text x="50" y="20" text-anchor="middle" fill="#93c5fd" font-weight="700">Qdrant</text>
+              <text x="50" y="38" text-anchor="middle" fill="#cbd5e1" font-size="10">Rust · fast</text>
+              <text x="50" y="52" text-anchor="middle" fill="#cbd5e1" font-size="10">strong filtering</text>
+            </g>
+            <g transform="translate(350,40)">
+              <rect width="100" height="60" rx="8" fill="#1e293b" stroke="#475569"/>
+              <text x="50" y="20" text-anchor="middle" fill="#93c5fd" font-weight="700">Milvus</text>
+              <text x="50" y="38" text-anchor="middle" fill="#cbd5e1" font-size="10">scale · GPU/disk</text>
+              <text x="50" y="52" text-anchor="middle" fill="#cbd5e1" font-size="10">DiskANN</text>
+            </g>
+            <g transform="translate(460,40)">
+              <rect width="80" height="60" rx="8" fill="#1e293b" stroke="#475569"/>
+              <text x="40" y="20" text-anchor="middle" fill="#93c5fd" font-weight="700">pgvector</text>
+              <text x="40" y="38" text-anchor="middle" fill="#cbd5e1" font-size="10">in Postgres</text>
+              <text x="40" y="52" text-anchor="middle" fill="#cbd5e1" font-size="10">SQL native</text>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Systems in Practice</span><span>1 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 2: Comparison Table ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 7 · Comparison · Slide 2 of 3</div>
+    <h1>Tree vs Hash vs Graph vs Quantization</h1>
+    <h2>One table, four families, every dimension that matters in production.</h2>
+  </header>
+
+  <div style="margin-top:18px">
+    <table>
+      <tr>
+        <th style="width:18%">Property</th>
+        <th>🔵 Tree (KD / Ball)</th>
+        <th>🟡 Hash (LSH / SimHash)</th>
+        <th>🟢 Graph (HNSW)</th>
+        <th>🟣 Quantization (IVF + PQ)</th>
+      </tr>
+      <tr>
+        <td><b>Best dim range</b></td>
+        <td>≤ 20</td><td>any</td><td>any</td><td>any</td>
+      </tr>
+      <tr>
+        <td><b>Build time</b></td>
+        <td><span class="pill good">fast</span></td>
+        <td><span class="pill good">fast</span></td>
+        <td><span class="pill bad">slow</span></td>
+        <td><span class="pill mid">medium</span></td>
+      </tr>
+      <tr>
+        <td><b>Query speed</b></td>
+        <td>fast (low-d only)</td>
+        <td>fast</td>
+        <td><span class="pill good">very fast</span></td>
+        <td><span class="pill good">very fast</span></td>
+      </tr>
+      <tr>
+        <td><b>Memory</b></td>
+        <td><span class="pill good">low</span></td>
+        <td><span class="pill mid">medium-high</span></td>
+        <td><span class="pill bad">high</span></td>
+        <td><span class="pill good">very low</span></td>
+      </tr>
+      <tr>
+        <td><b>Recall</b></td>
+        <td>100% (exact)</td>
+        <td>medium</td>
+        <td><span class="pill good">very high</span></td>
+        <td>high (with re-rank)</td>
+      </tr>
+      <tr>
+        <td><b>Updates / deletes</b></td>
+        <td>easy</td><td>easy</td>
+        <td><span class="pill bad">hard</span></td>
+        <td>medium</td>
+      </tr>
+      <tr>
+        <td><b>Scale ceiling</b></td>
+        <td>&lt; 1M</td>
+        <td>10M</td>
+        <td>100M</td>
+        <td><span class="pill good">1B+</span></td>
+      </tr>
+      <tr>
+        <td><b>Best use</b></td>
+        <td>geo · low-d ML</td>
+        <td>dedup · streaming</td>
+        <td>general semantic search</td>
+        <td>web-scale RAG</td>
+      </tr>
+      <tr>
+        <td><b>Famous in</b></td>
+        <td>scikit-learn</td>
+        <td>web dedup (Google)</td>
+        <td>Lucene · Qdrant · Weaviate</td>
+        <td>FAISS · Milvus · DiskANN</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer"><span>ANN · Comparison</span><span>2 / 3</span></div>
+</section>
+
+<!-- ============== SLIDE 3: Cheat Sheet ============== -->
+<section class="slide">
+  <header>
+    <div class="eyebrow">Section 7 · Cheat Sheet · Slide 3 of 3</div>
+    <h1>Which Algorithm Should I Use?</h1>
+    <h2>A decision tree from N (dataset size) to your ANN choice.</h2>
+  </header>
+
+  <div class="body">
+    <div class="text">
+      <p><span class="badge">Tuning HNSW</span></p>
+      <ul>
+        <li><b>efSearch ↑</b> → recall ↑, latency ↑</li>
+        <li><b>M ↑</b> → recall ↑, memory ↑, build time ↑</li>
+        <li><b>nprobe ↑</b> (IVF) → recall ↑, latency ↑</li>
+      </ul>
+      <p style="margin-top:14px"><span class="badge">Key takeaways</span></p>
+      <ul>
+        <li>Exact NN is impossible at scale — <b>trade recall for speed</b></li>
+        <li><b>HNSW</b> is today's gold standard (default for &lt;100M)</li>
+        <li><b>IVF + PQ</b> wins when memory matters (1B+ scale)</li>
+        <li>Real systems combine: <b>HNSW + IVF + PQ + re-rank</b></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <svg viewBox="0 0 620 420" width="100%" height="100%">
+        <rect x="10" y="10" width="600" height="400" rx="12" fill="#fff" stroke="#cbd5e1"/>
+        <text x="310" y="32" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Decision tree</text>
+
+        <!-- root -->
+        <g transform="translate(220,55)">
+          <rect width="180" height="50" rx="10" fill="#0f172a"/>
+          <text x="90" y="22" text-anchor="middle" font-size="13" fill="#f8fafc" font-weight="700">How many vectors?</text>
+          <text x="90" y="40" text-anchor="middle" font-size="11" fill="#93c5fd">N = ?</text>
+        </g>
+
+        <!-- arrows down -->
+        <line x1="240" y1="105" x2="120" y2="145" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+        <line x1="310" y1="105" x2="310" y2="145" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+        <line x1="380" y1="105" x2="500" y2="145" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f172a"/></marker></defs>
+
+        <!-- branch labels -->
+        <text x="155" y="130" font-size="11" font-weight="700" fill="#475569">N &lt; 100K</text>
+        <text x="310" y="135" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">100K – 100M</text>
+        <text x="465" y="130" font-size="11" font-weight="700" fill="#475569">N &gt; 100M</text>
+
+        <!-- 3 branches -->
+        <g transform="translate(40,150)">
+          <rect width="160" height="80" rx="10" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="80" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Brute force</text>
+          <text x="80" y="42" text-anchor="middle" font-size="10" fill="#1e3a8a">or KD-tree (d ≤ 10)</text>
+          <text x="80" y="62" text-anchor="middle" font-size="10" fill="#1e3a8a">scikit-learn / numpy</text>
+        </g>
+
+        <g transform="translate(220,150)">
+          <rect width="180" height="80" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+          <text x="90" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">HNSW · default ⭐</text>
+          <text x="90" y="42" text-anchor="middle" font-size="10" fill="#065f46">FAISS · Qdrant · Weaviate</text>
+          <text x="90" y="62" text-anchor="middle" font-size="10" fill="#065f46">M=16-48 · efSearch=50-500</text>
+        </g>
+
+        <g transform="translate(420,150)">
+          <rect width="160" height="80" rx="10" fill="#ede9fe" stroke="#7c3aed"/>
+          <text x="80" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#5b21b6">IVF + PQ</text>
+          <text x="80" y="42" text-anchor="middle" font-size="10" fill="#5b21b6">or DiskANN</text>
+          <text x="80" y="62" text-anchor="middle" font-size="10" fill="#5b21b6">FAISS · Milvus</text>
+        </g>
+
+        <!-- second-level guidance -->
+        <line x1="120" y1="230" x2="120" y2="270" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+        <line x1="310" y1="230" x2="310" y2="270" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+        <line x1="500" y1="230" x2="500" y2="270" stroke="#0f172a" stroke-width="1.6" marker-end="url(#a2)"/>
+
+        <g transform="translate(40,275)">
+          <rect width="160" height="60" rx="10" fill="#f1f5f9" stroke="#94a3b8"/>
+          <text x="80" y="22" text-anchor="middle" font-size="11" fill="#334155" font-weight="700">in-memory tests</text>
+          <text x="80" y="40" text-anchor="middle" font-size="10" fill="#475569">classic ML</text>
+          <text x="80" y="54" text-anchor="middle" font-size="10" fill="#475569">geo / 2D-3D points</text>
+        </g>
+
+        <g transform="translate(220,275)">
+          <rect width="180" height="60" rx="10" fill="#f1f5f9" stroke="#94a3b8"/>
+          <text x="90" y="22" text-anchor="middle" font-size="11" fill="#334155" font-weight="700">RAG · semantic search</text>
+          <text x="90" y="40" text-anchor="middle" font-size="10" fill="#475569">e-commerce · recsys</text>
+          <text x="90" y="54" text-anchor="middle" font-size="10" fill="#475569">multi-tenant SaaS</text>
+        </g>
+
+        <g transform="translate(420,275)">
+          <rect width="160" height="60" rx="10" fill="#f1f5f9" stroke="#94a3b8"/>
+          <text x="80" y="22" text-anchor="middle" font-size="11" fill="#334155" font-weight="700">web-scale RAG</text>
+          <text x="80" y="40" text-anchor="middle" font-size="10" fill="#475569">image search · ads</text>
+          <text x="80" y="54" text-anchor="middle" font-size="10" fill="#475569">low RAM constraint</text>
+        </g>
+
+        <!-- bottom callout: combine -->
+        <g transform="translate(40,355)">
+          <rect width="540" height="42" rx="10" fill="#0f172a"/>
+          <text x="270" y="20" text-anchor="middle" font-size="12" fill="#f8fafc" font-weight="700">
+            Need filters / metadata? → Vector DB &nbsp;·&nbsp; Embedded raw speed? → FAISS &nbsp;·&nbsp; Static + mmap? → Annoy
+          </text>
+          <text x="270" y="36" text-anchor="middle" font-size="11" fill="#a7f3d0">
+            Production combo: HNSW (navigation) + IVF (cells) + PQ (compression) + exact re-rank
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="footer"><span>ANN · Cheat Sheet</span><span>3 / 3 · End of Module</span></div>
+</section>
+
+</div>
+</body>
+</html>
